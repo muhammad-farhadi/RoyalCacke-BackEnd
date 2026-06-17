@@ -4,13 +4,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-# ایمپورت کردن روترهای ماژول‌هایی که تا الان ساختیم
 from app.modules.users.router import router as users_router
 from app.modules.articles.router import router as articles_router
 from app.modules.gallery.router import router as gallery_router
+from app.modules.courses.router import router as courses_router
+from app.modules.index.router import router as index_router  # ایمپورت جدید
 
-# اطمینان از وجود پوشه استاتیک برای جلوگیری از خطای احتمالی در زمان ران شدن اپلیکیشن
 os.makedirs("app/static/gallery", exist_ok=True)
+os.makedirs("app/static/courses/images", exist_ok=True)
+os.makedirs("app/static/courses/videos", exist_ok=True)
 
 app = FastAPI(
     title="Royal Cake Academy API",
@@ -18,25 +20,19 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# تنظیمات CORS برای ارتباط بدون مشکل فرانت‌اند (وب) و کلاینت فلاتر (موبایل)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # در زمان پروداکشن، دامنه اصلی سایت رو اینجا قرار می‌دیم
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# متصل کردن پوشه استاتیک به روت /static برای سرو کردن مستقیم عکس‌ها
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-
-@app.get("/", tags=["Health Check"])
-def root_check():
-    return {"message": "Welcome to the Academy API. System is up and running!"}
-
-
-# رجیستر کردن روترها با پیشوند و تگ‌های استاندارد
+# اتصال روترها (روتر ایندکس بدون پیشوند متصل می‌شود تا روت‌های اصلی / و /blog رو مستقیم هندل کنه)
+app.include_router(index_router, tags=["Website Index"])
 app.include_router(users_router, prefix="/api/v1/users", tags=["Users"])
 app.include_router(articles_router, prefix="/api/v1/articles", tags=["Articles"])
 app.include_router(gallery_router, prefix="/api/v1/gallery", tags=["Gallery"])
+app.include_router(courses_router, prefix="/api/v1/courses", tags=["Courses"])

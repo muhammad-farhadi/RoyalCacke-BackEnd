@@ -1,0 +1,175 @@
+@font-face {
+    font-family: 'b-yekann-bold';
+    src: url(../font/BYekan+\ Bold.ttf);
+    font-weight: normal;
+}
+
+:root {
+    --primary-color: #0c4d3b;
+    --accent-color: #fc94a1;
+    --text-dark: #222222;
+    --light-bg: #fcf8f5;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'b-yekann-bold', 'Segoe UI', Tahoma, sans-serif;
+}
+
+body {
+    background-color: var(--light-bg);
+    background-image: url('17236391765906722975.jpeg');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+    background-attachment: fixed;
+
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: inset 0 0 0 2000px rgba(12, 77, 59, 0.15);
+    min-height: 100vh;
+    padding: 40px 20px;
+}
+
+.article-container {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 25px;
+    overflow: hidden;
+    box-shadow: 0 15px 35px rgba(12, 77, 59, 0.05);
+}
+
+.article-banner {
+    width: 100%;
+    height: 350px;
+    object-fit: cover;
+}
+
+.article-content {
+    padding: 40px 35px;
+    text-align: right;
+}
+
+.article-meta {
+    display: flex;
+    gap: 20px;
+    color: #888;
+    font-size: 13px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 15px;
+}
+
+.article-meta span i {
+    color: var(--accent-color);
+    margin-left: 5px;
+}
+
+.article-content h1 {
+    color: var(--primary-color);
+    font-size: 26px;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.article-text {
+    color: #444;
+    font-size: 16px;
+    line-height: 1.8;
+}
+
+.article-text p {
+    margin-bottom: 20px;
+}
+
+.article-text h2 {
+    color: var(--primary-color);
+    font-size: 20px;
+    margin: 30px 0 15px;
+    border-right: 4px solid var(--accent-color);
+    padding-right: 10px;
+}
+
+/* بخش نظرات */
+.comments-section {
+    border-top: 2px solid #eee;
+    margin-top: 40px;
+    padding-top: 30px;
+}
+
+.comments-section h3 {
+    color: var(--primary-color);
+    margin-bottom: 20px;
+}
+
+.comment-form textarea {
+    width: 100%;
+    height: 120px;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    padding: 15px;
+    outline: none;
+    font-size: 15px;
+    resize: none;
+    transition: 0.3s;
+    margin-bottom: 15px;
+}
+
+.comment-form textarea:focus {
+    border-color: var(--primary-color);
+}
+
+.btn-comment {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 25px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-comment:hover {
+    background: var(--accent-color);
+}
+
+/* دکمه بازگشت */
+.back-btn-box {
+    padding: 20px 35px 0;
+    text-align: left;
+}
+
+.back-to-blogs {
+    color: #aaa;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.back-to-blogs:hover {
+    color: var(--primary-color);
+}
+
+/* ریسپانسیو موبایل */
+@media screen and (max-width: 480px) {
+    .article-banner {
+        height: 200px;
+    }
+
+    .article-content {
+        padding: 25px 20px;
+    }
+
+    .article-content h1 {
+        font-size: 20px;
+    }
+
+    .article-text {
+        font-size: 15px;
+    }
+}

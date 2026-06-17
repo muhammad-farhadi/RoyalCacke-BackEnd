@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ article.title }} | رویال کیک</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/single-blog.css">
+</head>
+<body>
+
+<div class="article-container">
+
+    <div class="back-btn-box">
+        <a href="/blog" class="back-to-blogs"><i class="fas fa-arrow-right"></i> بازگشت به مقالات</a>
+    </div>
+
+    <img src="{{ article.image_url if hasattr(article, 'image_url') else '/static/img/cakes.png' }}"
+         alt="{{ article.title }}" class="article-banner">
+
+    <div class="article-content">
+        <div class="article-meta">
+            <span><i class="far fa-user"></i> نویسنده: {{ article.author.full_name if hasattr(article, 'author') and article.author else 'مدیریت رویال کیک' }}</span>
+            <span><i class="far fa-calendar-alt"></i> {{ article.created_at.strftime('%d %B %Y') if hasattr(article.created_at, 'strftime') else article.created_at }}</span>
+            <span><i class="far fa-comments"></i> دیدگاه‌ها غیرفعال است</span>
+        </div>
+
+        <h1>{{ article.title }}</h1>
+
+        <div class="article-text">
+            {{ article.content | safe }}
+        </div>
+
+        <div class="comments-section">
+            <h3>دیدگاه شما</h3>
+            <p style="font-size: 13px; color: #888; margin-bottom: 15px;">برای ثبت نظر و پرسش درباره این آموزش،
+                می‌توانید از طریق اپلیکیشن اختصاصی آکادمی اقدام کنید.</p>
+            <form class="comment-form" onsubmit="event.preventDefault();">
+                <textarea disabled placeholder="ثبت دیدگاه تنها از طریق اپلیکیشن موبایل امکان‌پذیر است..."></textarea>
+                <button type="button" style="background-color: #ccc; cursor: not-allowed;" class="btn-comment">قفل شده
+                </button>
+            </form>
+        </div>
+
+    </div>
+</div>
+
+</body>
+</html>

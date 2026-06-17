@@ -1,0 +1,190 @@
+@font-face {
+    font-family: 'b-bazanian';
+    src: url(../font/B-NAZANIN.TTF);
+    font-weight: normal;
+    font-style: bold;
+
+}
+
+@font-face {
+    font-family: 'b-yekann';
+    src: url(../font/BYekan+.ttf);
+    font-weight: normal;
+}
+
+@font-face {
+    font-family: 'b-yekann-bold';
+    src: url(../font/BYekan+\ Bold.ttf);
+    font-weight: normal;
+
+
+}
+
+:root {
+    --primary-color: #0c4d3b;
+    --accent-color: #fc94a1;
+    --light-bg: #fcf8f5;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family:'b-yekann-bold' , sans-serif;
+}
+
+body {
+    background-color: var(--light-bg);
+    background-image: url('../img/background_image.jpg'); 
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px); /* سازگاری با مرورگرهای سافاری و آیفون */
+    
+    /* ایجاد یک لایه رنگی ملایم روی عکس برای پنهان کردن بیشتر نویزها */
+    box-shadow: inset 0 0 0 2000px rgba(12, 77, 59, 0.15); 
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.otp-card {
+    background: white;
+    width: 100%;
+    max-width: 400px;
+    padding: 40px 30px;
+    border-radius: 25px;
+    box-shadow: 0 15px 35px rgba(12, 77, 59, 0.05);
+    text-align: center;
+    border-top: 5px solid var(--primary-color);
+}
+
+h2 {
+    color: var(--primary-color);
+    font-size: 22px;
+    margin-bottom: 10px;
+}
+
+p {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 30px;
+    line-height: 1.6;
+}
+
+.otp-inputs {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 25px;
+    direction: ltr;
+}
+
+.otp-inputs input {
+    width: 55px;
+    height: 55px;
+    border: 2px solid #ddd;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 22px;
+    font-weight: bold;
+    color: var(--primary-color);
+    outline: none;
+    transition: 0.3s;
+}
+
+.otp-inputs input:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 4px rgba(252, 148, 161, 0.1);
+}
+
+.timer-container {
+    font-size: 14px;
+    color: #888;
+    margin-bottom: 25px;
+}
+
+.timer-container span {
+    color: var(--accent-color);
+    font-weight: bold;
+}
+
+.resend-btn {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    font-weight: bold;
+    cursor: pointer;
+    display: none;
+    margin: 0 auto;
+    font-size: 14px;
+}
+
+.btn-verify {
+    width: 100%;
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 30px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-verify:hover {
+    background: var(--primary-color);
+}
+
+.back-link {
+    display: inline-block;
+    margin-top: 20px;
+    color: #aaa;
+    text-decoration: none;
+    font-size: 13px;
+}
+
+
+
+/* کدهای ریسپانسیو برای موبایل‌ها و صفحات کوچک */
+@media screen and (max-width: 480px) {
+    body {
+        padding: 10px; /* کاهش فاصله دور در موبایل برای فضای بیشتر */
+    }
+
+    .otp-card {
+        padding: 30px 20px; /* جمع‌وجورتر شدن کارت در موبایل */
+        border-radius: 20px;
+    }
+
+    h2 {
+        font-size: 19px; /* کوچک‌تر شدن سایز تیتر */
+    }
+
+    p {
+        font-size: 13px;
+        margin-bottom: 20px;
+    }
+
+    .otp-inputs {
+        gap: 10px; /* نزدیک‌تر شدن اینپوت‌های کد به هم */
+        margin-bottom: 20px;
+    }
+
+    .otp-inputs input {
+        width: 48px; /* کوچک‌تر شدن باکس‌های عدد در موبایل‌های کوچک */
+        height: 48px;
+        font-size: 18px;
+        border-radius: 10px;
+    }
+
+    .btn-verify {
+        padding: 12px;
+        font-size: 15px;
+    }
+}

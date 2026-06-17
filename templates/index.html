@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>رویال کیک | آموزش تخصصی کیک و دسر</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/all.min.css?v=6.4.0">
+</head>
+
+<body>
+
+<header class="navbar">
+    <div class="logo">
+        <div class="logo-img">
+            <img class="logo-img" src="/static/img/logo.png">
+        </div>
+        <div class="logo-txt">
+            <h2>رویال <span>کیک</span></h2>
+        </div>
+    </div>
+
+    <div class="menu-toggle" id="mobile-menu">
+        <i class="fa-solid fa-bars"></i>
+    </div>
+
+    <nav class="nav-elements">
+        <ul class="nav-links">
+            <li><a href="/" class="active">صفحه نخست</a></li>
+            <li><a href="#courses">دوره‌ها</a></li>
+            <li><a href="#blog-container">بلاگ‌ها</a></li>
+            <li><a href="#about-container">درباره رویال کیک</a></li>
+            <li><a href="#contact-container">تماس با ما</a></li>
+        </ul>
+    </nav>
+
+    <div class="nav-buttons">
+        <a href="#pwa-container" class="btn-download"><i class="fa-solid fa-mobile-screen-button"></i> دانلود
+            اپلیکیشن</a>
+    </div>
+</header>
+
+<section class="slider-container">
+    <div class="slide fade">
+        <img src="/static/img/banner1.png" alt="دوره های شیرینی">
+        <div class="slide-content">
+            <h1>دوره‌های تخصصی شیرینی</h1>
+            <p>خلاقیت خود را با تکنیک‌های مدرن شکوفا کنید</p>
+            <a href="#courses" class="btn-primary">مشاهده دوره‌ها</a>
+        </div>
+    </div>
+
+    <div class="slide fade">
+        <img src="/static/img/banner2.png" alt="دوره کیک و کوکی کافی شاپی">
+        <div class="slide-content">
+            <h1>هنر پخت کیک را حرفه‌ای بیاموزید</h1>
+            <p>از پایه تا پیشرفته، همراه با رویال کیک</p>
+            <a href="#courses" class="btn-primary">شروع یادگیری</a>
+        </div>
+    </div>
+
+    <div class="slide fade">
+        <img src="/static/img/banner3.png" alt="دوره های شیرینی">
+        <div class="slide-content">
+            <h1>دوره‌های تخصصی شیرینی</h1>
+            <p>خلاقیت خود را با تکنیک‌های مدرن شکوفا کنید</p>
+            <a href="#courses" class="btn-primary">مشاهده دوره‌ها</a>
+        </div>
+    </div>
+
+    <div class="slide fade">
+        <img src="/static/img/banner4.png" alt="دوره های شیرینی">
+        <div class="slide-content">
+            <h1>دوره‌های تخصصی شیرینی</h1>
+            <p>خلاقیت خود را با تکنیک‌های مدرن شکوفا کنید</p>
+            <a href="#courses" class="btn-primary">مشاهده دوره‌ها</a>
+        </div>
+    </div>
+
+    <div class="slide fade">
+        <img src="/static/img/banner5.png" alt="دوره های شیرینی">
+        <div class="slide-content">
+            <h1>دوره‌های تخصصی شیرینی</h1>
+            <p>خلاقیت خود را با تکنیک‌های مدرن شکوفا کنید</p>
+            <a href="#courses" class="btn-primary">مشاهده دوره‌ها</a>
+        </div>
+    </div>
+
+    <div class="slide fade">
+        <img src="/static/img/banner6.png" alt="دوره های شیرینی">
+        <div class="slide-content">
+            <h1>دوره‌های تخصصی شیرینی</h1>
+            <p>خلاقیت خود را با تکنیک‌های مدرن شکوفا کنید</p>
+            <a href="#courses" class="btn-primary">مشاهده دوره‌ها</a>
+        </div>
+    </div>
+
+    <a class="next" onclick="changeSlide(1)">&#10094;</a>
+    <a class="prev" onclick="changeSlide(-1)">&#10095;</a>
+
+
+    <div class="dots-container" id="dotsContainer"></div>
+</section>
+
+<section class="courses-container" id="courses">
+    <div class="section-title">
+        <h2>دوره‌های آموزشی <span>رویال کیک</span></h2>
+        <p>مهارت‌های قنادی خود را با دوره‌های تخصصی و از پایه ارتقا دهید</p>
+    </div>
+
+    <div class="courses-grid">
+        {% for course in courses %}
+        <div class="course-card">
+            <div class="course-image">
+                <img src="{{ course.image_url }}" alt="{{ course.title }}">
+                {% if course.badge %}
+                <span class="badge">{{ course.badge }}</span>
+                {% endif %}
+            </div>
+            <div class="course-content">
+                <h3>{{ course.title }}</h3>
+                <div class="course-info">
+                    <span><i class="fa-solid fa-clock"></i> {{ course.session_count }} جلسه </span>
+                    <span><i class="fa-solid fa-signal"></i> {{ course.level }}</span>
+                </div>
+                <div class="course-footer">
+                    <div class="price">
+                        <span class="amount">{{ "{:,}".format(course.price) }}</span> تومان
+                    </div>
+                    <a href="#pwa-container" class="btn-course">ثبت‌نام دوره</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="pwa-container" id="pwa-container">
+    <div class="pwa-wrapper">
+        <div class="pwa-content">
+            <span class="pwa-tag">نسخه بدون نیاز به نصب (PWA)</span>
+            <h2>اپلیکیشن اختصاصی <span>رویال کیک</span></h2>
+            <p class="pwa-description">
+                با نصب وب‌اپلیکیشن رویال کیک، بدون اشغال کردن فضای گوشی و بدون نیاز به بروزرسانی، همیشه و همه جا به
+                دوره‌ها، رسپی‌ها و پروفایل کاربری خود دسترسی سریع داشته باشید. این نسخه با تمام سیستم‌عامل‌های
+                اندروید و iOS کاملاً سازگار است.
+            </p>
+            <div class="pwa-features">
+                <div class="pwa-feat"><i class="fa-solid fa-bolt"></i> سرعت فوق‌العاده بالا</div>
+                <div class="pwa-feat"><i class="fa-solid fa-cloud"></i> دسترسی سریع به مطالب</div>
+                <div class="pwa-feat"><i class="fa-solid fa-bell"></i> سازگار با سیستم عامل های اندروید و ios</div>
+            </div>
+            <div class="pwa-buttons">
+                <a href="#" class="btn-pwa-download"><i class="fa-brands fa-android"></i> دانلود نسخه اندروید</a>
+                <a href="#" class="btn-pwa-download btn-apple"><i class="fa-brands fa-apple"></i> راهنمای نصب iOS</a>
+            </div>
+        </div>
+        <div class="pwa-image-side">
+            <div class="phone-mockup">
+                <img src="/static/img/logo.png" alt="اپلیکیشن رویال کیک">
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="blog-container" id="blog-container">
+    <div class="section-title">
+        <h2><a href="/blog">آخرین مطالب <span>مجله رویال کیک</span></a></h2>
+        <p>جدیدترین آموزش‌ها، ترفندهای قنادی و رسپی‌های رایگان</p>
+    </div>
+
+    <div class="blog-grid">
+        {% for article in articles %}
+        <article class="blog-card">
+            <div class="blog-image">
+                <img src="{{ article.image_url if hasattr(article, 'image_url') else '/static/img/cakes.png' }}"
+                     alt="{{ article.title }}">
+                {% if article.tags %}
+                <span class="blog-category">{{ article.tags.split(',')[0] }}</span>
+                {% endif %}
+            </div>
+            <div class="blog-content">
+                <div class="blog-meta">
+                    <span><i class="fa-regular fa-calendar-days"></i> {{ article.created_at.strftime('%d %B %Y') if hasattr(article.created_at, 'strftime') else article.created_at }}</span>
+                    <button class="like-btn"><i class="fa-regular fa-heart"></i> <span class="like-count">۰</span>
+                    </button>
+                </div>
+                <h3>{{ article.title }}</h3>
+                <p class="blog-excerpt">{{ article.meta_description if article.meta_description else
+                    article.content[:150] + '...' }}</p>
+                <a href="/blog/{{ article.slug }}" class="btn-read-more">ادامه مطلب <i
+                        class="fa-solid fa-arrow-left"></i></a>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="about-container" id="about-container">
+    <div class="about-content">
+        <h2>درباره <span>رویال کیک</span></h2>
+        <p class="about-subtitle">داستان یک طعم رویایی و آموزش‌های حرفه‌ای</p>
+        <p class="about-text">
+            رویال کیک از سال ۱۳۹۸ فعالیت خود را با هدف ارتقای سطح قنادی و آموزش تخصصی کیک و شیرینی آغاز کرد. ما در
+            این مجموعه تلاش می‌کنیم تا به‌روزترین تکنیک‌های پخت کیک و شیرینی و چیز کیک را از سطح کاملاً مبتدی تا
+            پیشرفته و به زبان ساده به شما آموزش دهیم تا بتوانید کسب‌وکار خانگی خود را راه‌اندازی کنید.
+        </p>
+        <div class="features-grid">
+            <div class="feature-item">
+                <div class="feature-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+                <h4>آموزش پروژه محور</h4>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon"><i class="fa-solid fa-headset"></i></div>
+                <h4>پشتیبانی دائمی</h4>
+            </div>
+        </div>
+    </div>
+    <div class="about-image-side">
+        <div class="about-circle-deco">
+            <img src="/static/img/sweet31.JPG" alt="قنادی رویال کیک">
+        </div>
+    </div>
+</section>
+
+<section class="gallery-section">
+    <div class="gallery-container">
+        <h2 class="section-title">گالری تصاویر <span>رویال کیک</span></h2>
+
+        <div class="gallery-filters">
+            <button class="filter-btn active" onclick="filterGallery('all')">همه</button>
+            <button class="filter-btn" onclick="filterGallery('cake')">کیک‌ها</button>
+            <button class="filter-btn" onclick="filterGallery('cheesecake')">چیزکیک‌ها</button>
+            <button class="filter-btn" onclick="filterGallery('pastry')">شیرینی‌ها</button>
+        </div>
+
+        <div class="gallery-grid">
+            {% for item in gallery %}
+            <div class="gallery-item {{ item.category }}">
+                <img src="{{ item.image_url }}" alt="{{ item.alt_text if item.alt_text else item.title }}">
+                <div class="gallery-overlay"><span>{{ item.title }}</span></div>
+            </div>
+            {% endfor %}
+        </div>
+        <button class="btn-load-more" id="loadMoreBtn" onclick="loadMoreImages()">مشاهده تصاویر بیشتر...<i
+                class="fa-solid fa-plus"></i></button>
+    </div>
+</section>
+
+<section class="contact-container" id="contact-container">
+    <div class="section-title">
+        <h2>با ما در <span>ارتباط باشید</span></h2>
+        <p>از طریق فرم زیر پیام بفرستید یا در شبکه‌های اجتماعی ما را دنبال کنید</p>
+    </div>
+
+    <div class="contact-wrapper">
+        <div class="contact-form-side">
+            <form id="royalContactForm" method="POST" action="/contact">
+                <div class="input-group">
+                    <input type="text" name="name" id="contactName" required placeholder=" ">
+                    <label>نام و نام خانوادگی</label>
+                </div>
+                <div class="input-group">
+                    <input type="tel" name="phone_number" id="contactPhone" required placeholder=" ">
+                    <label>شماره تماس</label>
+                </div>
+                <div class="input-group">
+                    <textarea name="message" id="contactMessage" rows="4" required placeholder=" "></textarea>
+                    <label>متن پیام شما...</label>
+                </div>
+                <button type="submit" class="btn-submit-contact">ارسال پیام <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+
+        <div class="contact-info-side">
+            <div class="info-boxes-wrapper">
+                <div class="info-box-mini">
+                    <i class="fa-solid fa-phone"></i>
+                    <span>۰۹۱۲۷۶۱۲۶۵۵</span>
+                </div>
+                <div class="info-box-mini">
+                    <i class="fa-solid fa-map-marker-alt"></i>
+                    <span>تهران</span>
+                </div>
+            </div>
+
+            <div class="social-channels-card">
+                <h3>رویال کیک در شبکه‌های اجتماعی</h3>
+                <p>برای دیدن آموزش‌های کوتاه روزانه و پشت صحنه کارگاه، ما را دنبال کنید:</p>
+
+                <div class="social-full-grid">
+                    <a href="https://instagram.com/royalcakes.ir" target="_blank" class="channel-btn instagram">
+                        <i class="fa-brands fa-instagram"></i> اینستاگرام
+                    </a>
+                    <a href="#" class="channel-btn telegram">
+                        <i class="fa-brands fa-telegram"></i> تلگرام
+                    </a>
+                    <a href="https://wa.me/989127612655" target="_blank" class="channel-btn whatsapp">
+                        <i class="fa-brands fa-whatsapp"></i> واتس‌اپ
+                    </a>
+                    <a href="#" class="channel-btn eitaa">
+                        <i class="fa-solid fa-comment-dots"></i> بله
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer class="royal-footer">
+    <div class="footer-wave"></div>
+
+    <div class="footer-grid">
+        <div class="footer-column about-col">
+            <h3 class="footer-logo">رویال <span>کیک</span></h3>
+            <p class="footer-desc">
+                آکادمی تخصصی رویال کیک، مرجع آموزش کیک و چیزکیک مدرن و شیرینی‌پزی پیشرفته در ایران. با ما طعم رویایی
+                موفقیت را بچشید.
+            </p>
+            <div class="trust-badges">
+                <div class="badge-icon"><i class="fa-solid fa-shield-alt"></i></div>
+                <div class="badge-icon"><i class="fa-solid fa-check-circle"></i></div>
+            </div>
+        </div>
+
+        <div class="footer-column">
+            <h3>دسترسی سریع</h3>
+            <ul class="footer-links">
+                <li><a href="/"><i class="fa-solid fa-chevron-left"></i> صفحه اصلی</a></li>
+                <li><a href="#courses"><i class="fa-solid fa-chevron-left"></i> دوره‌های آموزشی</a></li>
+                <li><a href="/blog"><i class="fa-solid fa-chevron-left"></i> وبلاگ و مقالات</a></li>
+            </ul>
+        </div>
+
+        <div class="footer-column newsletter-col">
+            <img src="/static/img/enamad.png">
+        </div>
+    </div>
+
+    <div class="footer-bottom">
+        <p>تمامی حقوق مادی و معنوی این سایت متعلق به <span>آکادمی رویال کیک</span> می‌باشد</p>
+    </div>
+</footer>
+
+<script src="/static/js/script.js"></script>
+</body>
+
+</html>

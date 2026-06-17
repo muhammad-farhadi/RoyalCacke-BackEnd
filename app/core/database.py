@@ -2,22 +2,17 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-# آدرس دیتابیس (بعداً می‌تونی این رو از فایل .env بخونی)
-# مثال برای PostgreSQL: "postgresql://user:password@localhost/dbname"
-SQLALCHEMY_DATABASE_URL = "sqlite:///./academy.db"
+# فرمت: postgresql://[user]:[password]@[host]:[port]/[database_name]
+SQLALCHEMY_DATABASE_URL = "postgresql://postgres:12345mfe@localhost:5432/royalcake_db"
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    # این آرگومان فقط برای SQLite نیازه، برای دیتابیس‌های دیگه پاکش کن
-    connect_args={"check_same_thread": False}
-)
+# در پستگرس نیازی به check_same_thread نیست
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
 
-# Dependency برای تزریق سشن دیتابیس توی روت‌ها
 def get_db():
     db = SessionLocal()
     try:
