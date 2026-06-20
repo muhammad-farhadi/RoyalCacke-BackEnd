@@ -83,3 +83,10 @@ def update_user_info(db: Session, user_id: int, user_in: schemas.UserUpdate):
     db.commit()
     db.refresh(db_user)
     return db_user
+
+
+def get_all_users(db: Session, skip: int = 0, limit: int = 50):
+    """
+    دریافت لیست تمام کاربران با قابلیت صفحه‌بندی (Pagination)
+    """
+    return db.query(models.User).order_by(models.User.created_at.desc()).offset(skip).limit(limit).all()

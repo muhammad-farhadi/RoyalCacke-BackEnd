@@ -32,7 +32,9 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 
 
 def get_current_active_user(current_user: models.User = Depends(get_current_user)):
-    if not current_user.is_active or not current_user.is_verified:
+    # نکته: اگر فیلد is_verified رو در مدل‌ها حذف کردی، اینجا هم باید پاکش کنی.
+    # اگر هنوز هست که هیچی، همین خط درسته.
+    if not current_user.is_active or getattr(current_user, 'is_verified', False) == False:
         raise HTTPException(status_code=400, detail="حساب کاربری غیرفعال یا تایید نشده است.")
     return current_user
 
@@ -43,6 +45,12 @@ class RequirePermission:
         self.required_permission = required_permission
 
     def __call__(self, current_user: models.User = Depends(get_current_active_user)):
+        # --- بخش اضافه شده: بررسی مدیر کل (سوپریوزر) ---
+        # اگر کاربر سوپریوزر بود، بدون چک کردن پرمیژن‌ها، اجازه عبور می‌دهیم
+        if current_user.is_superuser:
+            return current_user
+        # -----------------------------------------------
+
         user_permissions = set()
         for role in current_user.roles:
             for perm in role.permissions:

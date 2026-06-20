@@ -14,7 +14,7 @@
 <header class="navbar">
     <div class="logo">
         <div class="logo-img">
-            <img class="logo-img" src="/static/img/logo.png">
+            <img class="logo-img" src="/static/img/logo.webp">
         </div>
         <div class="logo-txt">
             <h2>رویال <span>کیک</span></h2>
@@ -43,7 +43,7 @@
 
 <section class="slider-container">
     <div class="slide fade">
-        <img src="/static/img/banner1.png" alt="دوره های شیرینی">
+        <img src="/static/img/banner1.webp" alt="دوره های شیرینی">
         <div class="slide-content">
             <h1>دوره‌های تخصصی شیرینی</h1>
             <p>خلاقیت خود را با تکنیک‌های مدرن شکوفا کنید</p>
@@ -52,7 +52,7 @@
     </div>
 
     <div class="slide fade">
-        <img src="/static/img/banner2.png" alt="دوره کیک و کوکی کافی شاپی">
+        <img src="/static/img/banner2.webp" alt="دوره کیک و کوکی کافی شاپی">
         <div class="slide-content">
             <h1>هنر پخت کیک را حرفه‌ای بیاموزید</h1>
             <p>از پایه تا پیشرفته، همراه با رویال کیک</p>
@@ -61,7 +61,7 @@
     </div>
 
     <div class="slide fade">
-        <img src="/static/img/banner3.png" alt="دوره های شیرینی">
+        <img src="/static/img/banner3.webp" alt="دوره های شیرینی">
         <div class="slide-content">
             <h1>دوره‌های تخصصی شیرینی</h1>
             <p>خلاقیت خود را با تکنیک‌های مدرن شکوفا کنید</p>
@@ -70,7 +70,7 @@
     </div>
 
     <div class="slide fade">
-        <img src="/static/img/banner4.png" alt="دوره های شیرینی">
+        <img src="/static/img/banner4.webp" alt="دوره های شیرینی">
         <div class="slide-content">
             <h1>دوره‌های تخصصی شیرینی</h1>
             <p>خلاقیت خود را با تکنیک‌های مدرن شکوفا کنید</p>
@@ -79,7 +79,7 @@
     </div>
 
     <div class="slide fade">
-        <img src="/static/img/banner5.png" alt="دوره های شیرینی">
+        <img src="/static/img/banner5.webp" alt="دوره های شیرینی">
         <div class="slide-content">
             <h1>دوره‌های تخصصی شیرینی</h1>
             <p>خلاقیت خود را با تکنیک‌های مدرن شکوفا کنید</p>
@@ -88,7 +88,7 @@
     </div>
 
     <div class="slide fade">
-        <img src="/static/img/banner6.png" alt="دوره های شیرینی">
+        <img src="/static/img/banner6.webp" alt="دوره های شیرینی">
         <div class="slide-content">
             <h1>دوره‌های تخصصی شیرینی</h1>
             <p>خلاقیت خود را با تکنیک‌های مدرن شکوفا کنید</p>
@@ -158,7 +158,7 @@
         </div>
         <div class="pwa-image-side">
             <div class="phone-mockup">
-                <img src="/static/img/logo.png" alt="اپلیکیشن رویال کیک">
+                <img src="/static/img/logo.webp" alt="اپلیکیشن رویال کیک">
             </div>
         </div>
     </div>
@@ -174,15 +174,15 @@
         {% for article in articles %}
         <article class="blog-card">
             <div class="blog-image">
-                <img src="{{ article.image_url if hasattr(article, 'image_url') else '/static/img/cakes.png' }}"
-                     alt="{{ article.title }}">
+            <img src="{{ article.image_url if article.image_url else '/static/img/sweet31.webp' }}"
+                 alt="{{ article.title }}">
                 {% if article.tags %}
                 <span class="blog-category">{{ article.tags.split(',')[0] }}</span>
                 {% endif %}
             </div>
             <div class="blog-content">
                 <div class="blog-meta">
-                    <span><i class="fa-regular fa-calendar-days"></i> {{ article.created_at.strftime('%d %B %Y') if hasattr(article.created_at, 'strftime') else article.created_at }}</span>
+                    <span><i class="fa-regular fa-calendar-days"></i> {{ article.created_at | jalali }}</span>
                     <button class="like-btn"><i class="fa-regular fa-heart"></i> <span class="like-count">۰</span>
                     </button>
                 </div>
@@ -219,7 +219,7 @@
     </div>
     <div class="about-image-side">
         <div class="about-circle-deco">
-            <img src="/static/img/sweet31.JPG" alt="قنادی رویال کیک">
+            <img src="/static/img/sweet31.webp" alt="قنادی رویال کیک">
         </div>
     </div>
 </section>
@@ -334,9 +334,9 @@
             </ul>
         </div>
 
-        <div class="footer-column newsletter-col">
-            <img src="/static/img/enamad.png">
-        </div>
+<!--        <div class="footer-column newsletter-col">-->
+<!--            <img src="/static/img/enamad.png">-->
+<!--        </div>-->
     </div>
 
     <div class="footer-bottom">

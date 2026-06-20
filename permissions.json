@@ -1,0 +1,16 @@
+{
+  "permissions": [
+    {"name": "course:write", "description": "امکان ساخت و ویرایش دوره‌های آموزشی"},
+    {"name": "course:delete", "description": "امکان حذف کامل دوره‌های آموزشی"},
+
+    {"name": "gallery:write", "description": "امکان آپلود تصاویر در گالری رویال کیک"},
+    {"name": "gallery:delete", "description": "امکان حذف تصاویر از گالری"},
+
+    {"name": "article:write", "description": "امکان ساخت مقالات مجله"},
+    {"name": "article:update", "description": "امکان ویرایش مقالات مجله"},
+    {"name": "article:delete", "description": "امکان حذف مقالات مجله"},
+
+    {"name": "user:read", "description": "خواندن اطلاعات کاربران"}
+  ],
+  "roles": []
+}

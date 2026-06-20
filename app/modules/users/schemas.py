@@ -34,12 +34,13 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    password: str = Field(..., min_length=6, description="رمز عبور حداقل باید ۶ کاراکتر باشد")
+    password: str = Field(..., min_length=4, max_length=50)
 
 
 class UserResponse(UserBase):
     id: int
     is_active: bool
+    is_superuser: bool
     roles: List[RoleResponse] = []
     created_at: datetime
 
@@ -77,3 +78,7 @@ class UserUpdate(BaseModel):
     password: Optional[str] = Field(None, min_length=6, description="تغییر رمز عبور توسط ادمین")
     is_active: Optional[bool] = None
     is_verified: Optional[bool] = None  # ادمین بتونه یوزر رو دستی تایید کنه
+
+
+class ResendOTPRequest(BaseModel):
+    phone_number: str

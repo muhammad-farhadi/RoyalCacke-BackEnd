@@ -1,4 +1,3 @@
-# app/modules/articles/schemas.py
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 from datetime import datetime
@@ -7,6 +6,7 @@ from datetime import datetime
 class ArticleBase(BaseModel):
     title: str = Field(..., max_length=200)
     slug: str = Field(..., description="آدرس یکتای مقاله برای SEO")
+    image_url: Optional[str] = Field(None, description="آدرس تصویر کاور مقاله")
     content: str
     meta_description: Optional[str] = Field(None, max_length=160, description="حداکثر ۱۶۰ کاراکتر برای سئو")
     tags: Optional[str] = Field(None, description="کلمات کلیدی با ویرگول جدا شوند")
@@ -19,6 +19,7 @@ class ArticleCreate(ArticleBase):
 class ArticleUpdate(BaseModel):
     title: Optional[str] = None
     slug: Optional[str] = None
+    image_url: Optional[str] = None
     content: Optional[str] = None
     meta_description: Optional[str] = None
     tags: Optional[str] = None

@@ -11,20 +11,29 @@ from app.modules.articles.services import get_articles, get_article_by_slug
 from app.modules.gallery.services import get_gallery_items
 from . import models, schemas
 
-router = APIRouter()
+import jdatetime
+from datetime import datetime
 
-# آدرس‌دهی پوشه قالب‌ها
+router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
 
-# ۱. رندر صفحه اصلی (Index)
+def to_jalali_filter(date_obj: datetime):
+    if not date_obj:
+        return ""
+    jdate = jdatetime.datetime.fromgregorian(datetime=date_obj, locale='fa_IR')
+    return jdate.strftime("%d %B %Y")
+
+
+templates.env.filters["jalali"] = to_jalali_filter
+
+
 @router.get("/", response_class=HTMLResponse)
 def render_home_page(request: Request, db: Session = Depends(get_db)):
     featured_courses = get_courses(db, limit=3)
     latest_articles = get_articles(db, limit=3)
 
-    # تغییر این خط: لیمیت را بردار یا مقدار بزرگی مثل 100 بگذار تا تمام عکس‌های گالری لود شوند
-    gallery_images = get_gallery_items(db, limit=300)
+    gallery_images = get_gallery_items(db, limit=100)
 
     return templates.TemplateResponse(
         request=request,
@@ -37,7 +46,6 @@ def render_home_page(request: Request, db: Session = Depends(get_db)):
     )
 
 
-# ۲. رندر صفحه آرشیو مقالات (Blog)
 @router.get("/blog", response_class=HTMLResponse)
 def render_blog_archive(request: Request, skip: int = 0, limit: int = 9, db: Session = Depends(get_db)):
     all_articles = get_articles(db, skip=skip, limit=limit)
@@ -50,7 +58,6 @@ def render_blog_archive(request: Request, skip: int = 0, limit: int = 9, db: Ses
     )
 
 
-# ۳. رندر صفحه تکی مقاله (Single Blog) بر اساس Slug برای سئوی عالی
 @router.get("/blog/{slug}", response_class=HTMLResponse)
 def render_single_article(request: Request, slug: str, db: Session = Depends(get_db)):
     article = get_article_by_slug(db, slug=slug)
@@ -66,7 +73,6 @@ def render_single_article(request: Request, slug: str, db: Session = Depends(get
     )
 
 
-# ۴. دریافت فرم تماس با ما (ارسال به صورت Form URL-Encoded از فرانت)
 @router.post("/contact", status_code=status.HTTP_201_CREATED)
 def handle_contact_submit(
         name: str = Form(...),

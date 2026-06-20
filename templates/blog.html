@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>مقالات و آموزش‌ها | رویال کیک</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/all.min.css?v=6.4.0">
     <link rel="stylesheet" href="/static/css/blog.css">
 </head>
 <body>
@@ -23,7 +23,7 @@
         {% for article in articles %}
         <article class="blog-card">
             <div class="card-img">
-                <img src="{{ article.image_url if hasattr(article, 'image_url') else '/static/img/cheesecake.png' }}"
+                <img src="{{ article.image_url if article.image_url else '/static/img/sweet31.webp' }}"
                      alt="{{ article.title }}">
 
                 {% if article.tags %}
@@ -39,7 +39,7 @@
                 <div class="card-footer">
                     <a href="/blog/{{ article.slug }}" class="read-more">ادامه مطلب <i
                             class="fas fa-arrow-left"></i></a>
-                    <span class="blog-date"><i class="far fa-calendar-alt"></i> {{ article.created_at.strftime('%d %B %Y') if hasattr(article.created_at, 'strftime') else article.created_at }}</span>
+                    <span class="blog-date"><i class="far fa-calendar-alt"></i> {{ article.created_at | jalali }}</span>
                 </div>
             </div>
         </article>

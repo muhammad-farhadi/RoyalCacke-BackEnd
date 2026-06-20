@@ -1,7 +1,10 @@
 # app/modules/users/router.py
 from datetime import datetime, timezone
+from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import create_access_token, SECRET_KEY, ALGORITHM, create_refresh_token
@@ -20,7 +23,7 @@ def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     if db_user:
         raise HTTPException(status_code=400, detail="این شماره موبایل قبلاً ثبت شده است.")
 
-    return services.create_user(db=db, user=user)
+    return services.create_user_and_send_otp(db=db, user=user)
 
 
 @router.post("/verify-otp")
@@ -31,8 +34,14 @@ def verify_otp(data: schemas.VerifyOTP, db: Session = Depends(get_db)):
     if user.is_verified:
         raise HTTPException(status_code=400, detail="این حساب قبلاً تایید شده است.")
 
+    # همسان‌سازی منطقه زمانی (UTC) برای جلوگیری از ارور offset-naive
+    now_utc = datetime.now(timezone.utc)
+    expire_time = user.otp_expire
+    if expire_time and expire_time.tzinfo is None:
+        expire_time = expire_time.replace(tzinfo=timezone.utc)
+
     # بررسی صحت و انقضای کد
-    if user.otp_code != data.otp_code or datetime.now(timezone.utc) > user.otp_expire:
+    if user.otp_code != data.otp_code or expire_time is None or now_utc > expire_time:
         raise HTTPException(status_code=400, detail="کد تایید نامعتبر است یا منقضی شده.")
 
     # تایید حساب
@@ -124,7 +133,14 @@ def reset_password(data: schemas.ResetPasswordRequest, db: Session = Depends(get
     if not user:
         raise HTTPException(status_code=400, detail="اطلاعات نامعتبر است.")
 
-    if user.otp_code != data.otp_code or datetime.now(timezone.utc) > user.otp_expire:
+    # همسان‌سازی منطقه زمانی (UTC) برای جلوگیری از ارور offset-naive
+    now_utc = datetime.now(timezone.utc)
+    expire_time = user.otp_expire
+    if expire_time and expire_time.tzinfo is None:
+        expire_time = expire_time.replace(tzinfo=timezone.utc)
+
+    # بررسی صحت و انقضای کد
+    if user.otp_code != data.otp_code or expire_time is None or now_utc > expire_time:
         raise HTTPException(status_code=400, detail="کد تایید نامعتبر است یا منقضی شده.")
 
     from app.core.security import get_password_hash
@@ -154,3 +170,39 @@ def edit_user(
         raise HTTPException(status_code=404, detail="کاربر یافت نشد.")
 
     return updated_user
+
+
+@router.post("/resend-otp")
+def resend_otp(data: schemas.ResendOTPRequest, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.phone_number == data.phone_number).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="کاربر یافت نشد.")
+
+    if user.is_verified:
+        raise HTTPException(status_code=400, detail="این حساب کاربری قبلاً تایید شده است و نیازی به کد ندارد.")
+
+    # تولید کد جدید و تمدید زمان انقضا (۲ دقیقه)
+    otp = str(random.randint(100000, 999999))
+    user.otp_code = otp
+    user.otp_expire = datetime.now(timezone.utc) + timedelta(minutes=2)
+    db.commit()
+
+    # ماک ارسال پیامک (در آینده اینجا به API کاوه نگار یا ملی پیامک وصل می‌شود)
+    print(f"\n{'=' * 40}\n[SMS MOCK] ارسال مجدد کد تایید برای {user.phone_number}:\nکد: {otp}\n{'=' * 40}\n")
+
+    return {"message": "کد تایید جدید با موفقیت به شماره شما ارسال شد."}
+
+
+@router.get("/", response_model=List[schemas.UserResponse])
+def get_all_users(
+        skip: int = 0,
+        limit: int = 50,
+        db: Session = Depends(get_db),
+        current_user: models.User = Depends(RequirePermission("user:read"))
+):
+    """
+    دریافت لیست تمامی کاربران (مخصوص مدیریت)
+    """
+    users = services.get_all_users(db, skip=skip, limit=limit)
+    return users
