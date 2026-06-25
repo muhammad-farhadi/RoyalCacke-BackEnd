@@ -8,10 +8,11 @@ from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import create_access_token, SECRET_KEY, ALGORITHM, create_refresh_token
-from app.core.dependencies import get_current_active_user, RequirePermission
+from app.core.dependencies import get_current_active_user, RequirePermission, get_current_user
 import random
 from datetime import datetime, timedelta, timezone
 from . import schemas, services, models
+from .models import User
 
 router = APIRouter()
 
@@ -206,3 +207,32 @@ def get_all_users(
     """
     users = services.get_all_users(db, skip=skip, limit=limit)
     return users
+
+
+@router.get("/me", response_model=schemas.UserMeResponse)
+def get_current_user_info(
+        current_user: User = Depends(get_current_user),
+        db: Session = Depends(get_db)):
+    """
+    دریافت اطلاعات کامل کاربر فعلی (احراز هویت شده) به همراه سطح دسترسی‌ها
+    جهت استفاده در فرانت‌اند
+    """
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found or not authenticated"
+        )
+
+    # دریافت پرمیژن‌ها از سرویسی که نوشتیم
+    user_permissions = services.get_user_permissions(user=current_user, db=db)
+
+    # ترکیب داده‌های کاربر و پرمیژن‌ها برای خروجی
+    response_data = {
+        "id": current_user.id,
+        "full_name": current_user.full_name,
+        "phone_number": current_user.phone_number,
+        "is_active": current_user.is_active,
+        "permissions": user_permissions
+    }
+
+    return response_data

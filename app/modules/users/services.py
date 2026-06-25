@@ -6,6 +6,7 @@ from . import models, schemas
 from app.core.security import get_password_hash, verify_password
 from . import models, schemas
 from app.core.security import get_password_hash
+from .models import User
 
 
 def get_user_by_phone(db: Session, phone_number: str):
@@ -90,3 +91,21 @@ def get_all_users(db: Session, skip: int = 0, limit: int = 50):
     دریافت لیست تمام کاربران با قابلیت صفحه‌بندی (Pagination)
     """
     return db.query(models.User).order_by(models.User.created_at.desc()).offset(skip).limit(limit).all()
+
+
+def get_user_permissions(user: User, db: Session) -> list[str]:
+    """
+    استخراج لیست تمام دسترسی‌های یک کاربر
+    """
+    permissions = []
+
+    # اگر نقش‌ها و دسترسی‌ها در دیتابیس هستند، منطق شبیه به این خواهد بود:
+    if user.roles and user.roles.permissions:
+        # فرض بر این است که permissions یک رابطه به جدول پرمیژن‌هاست
+        permissions = [perm.name for perm in user.roles.permissions]
+
+    # در صورت داشتن دسترسی ادمین کل (SuperUser) می‌توانید دسترسی ویژه بدهید:
+    if getattr(user, 'is_superuser', False):
+        permissions.append("all_access")
+
+    return permissions
