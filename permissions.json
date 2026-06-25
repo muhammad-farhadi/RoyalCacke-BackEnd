@@ -10,6 +10,10 @@
     {"name": "article:update", "description": "امکان ویرایش مقالات مجله"},
     {"name": "article:delete", "description": "امکان حذف مقالات مجله"},
 
+    {"name": "discount:create", "description": "امکان ساخت کدهای تخفیف جدید"},
+    {"name": "discount:read", "description": "امکان مشاهده لیست کدهای تخفیف"},
+    {"name": "discount:update", "description": "امکان ویرایش کدهای تخفیف موجود"},
+
     {"name": "user:read", "description": "خواندن اطلاعات کاربران"}
   ],
   "roles": []
