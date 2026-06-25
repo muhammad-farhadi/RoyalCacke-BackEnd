@@ -9,6 +9,7 @@ from app.modules.articles.router import router as articles_router
 from app.modules.gallery.router import router as gallery_router
 from app.modules.courses.router import router as courses_router
 from app.modules.index.router import router as index_router
+from app.modules.orders.router import router as order_router
 
 os.makedirs("app/static/gallery", exist_ok=True)
 os.makedirs("app/static/courses/images", exist_ok=True)
@@ -51,3 +52,4 @@ app.include_router(users_router, prefix="/api/v1/users", tags=["Users"])
 app.include_router(articles_router, prefix="/api/v1/articles", tags=["Articles"])
 app.include_router(gallery_router, prefix="/api/v1/gallery", tags=["Gallery"])
 app.include_router(courses_router, prefix="/api/v1/courses", tags=["Courses"])
+app.include_router(order_router, prefix="/api/v1/orders", tags=["order"])
