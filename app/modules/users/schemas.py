@@ -84,17 +84,10 @@ class ResendOTPRequest(BaseModel):
     phone_number: str
 
 
-class UserMeResponse(BaseModel):
+class UserMeResponse(UserBase):
     id: int
-    email: str
-    username: Optional[str] = None
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    phone: Optional[str] = None
     is_active: bool
-
-    # لیست پرمیژن‌ها برای هندل کردن دسترسی‌ها در فرانت‌اند
+    is_superuser: bool
     permissions: List[str] = []
 
-    class Config:
-        from_attributes = True  # ORM Mode (برای سازگاری با SQLAlchemy)
+    model_config = ConfigDict(from_attributes=True)

@@ -93,19 +93,19 @@ def get_all_users(db: Session, skip: int = 0, limit: int = 50):
     return db.query(models.User).order_by(models.User.created_at.desc()).offset(skip).limit(limit).all()
 
 
-def get_user_permissions(user: User, db: Session) -> list[str]:
+def get_user_permissions(user: models.User) -> list[str]:
     """
-    استخراج لیست تمام دسترسی‌های یک کاربر
+    استخراج تمام دسترسی‌های کاربر از روی نقش‌هایی که دارد
     """
-    permissions = []
+    permissions = set()
 
-    # اگر نقش‌ها و دسترسی‌ها در دیتابیس هستند، منطق شبیه به این خواهد بود:
-    if user.roles and user.roles.permissions:
-        # فرض بر این است که permissions یک رابطه به جدول پرمیژن‌هاست
-        permissions = [perm.name for perm in user.roles.permissions]
+    # پیمایش در نقش‌های کاربر و استخراج دسترسی‌ها
+    for role in user.roles:
+        for perm in role.permissions:
+            permissions.add(perm.name)
 
-    # در صورت داشتن دسترسی ادمین کل (SuperUser) می‌توانید دسترسی ویژه بدهید:
-    if getattr(user, 'is_superuser', False):
-        permissions.append("all_access")
+    # اگر کاربر ادمین کل است، یک دسترسی ویژه به نام all_access به فرانت بدهیم (اختیاری)
+    if user.is_superuser:
+        permissions.add("all_access")
 
-    return permissions
+    return list(permissions)

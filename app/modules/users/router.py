@@ -211,28 +211,20 @@ def get_all_users(
 
 @router.get("/me", response_model=schemas.UserMeResponse)
 def get_current_user_info(
-        current_user: User = Depends(get_current_user),
-        db: Session = Depends(get_db)):
+        current_user: models.User = Depends(get_current_active_user)
+):
     """
-    دریافت اطلاعات کامل کاربر فعلی (احراز هویت شده) به همراه سطح دسترسی‌ها
-    جهت استفاده در فرانت‌اند
+    دریافت اطلاعات کاربری که لاگین کرده به همراه لیست دسترسی‌ها
     """
-    if not current_user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found or not authenticated"
-        )
+    # استخراج پرمیژن‌ها با استفاده از سرویسی که نوشتیم
+    user_permissions = services.get_user_permissions(current_user)
 
-    # دریافت پرمیژن‌ها از سرویسی که نوشتیم
-    user_permissions = services.get_user_permissions(user=current_user, db=db)
-
-    # ترکیب داده‌های کاربر و پرمیژن‌ها برای خروجی
-    response_data = {
+    # مپ کردن دیتا با اسکیما
+    return {
         "id": current_user.id,
         "full_name": current_user.full_name,
         "phone_number": current_user.phone_number,
         "is_active": current_user.is_active,
+        "is_superuser": current_user.is_superuser,
         "permissions": user_permissions
     }
-
-    return response_data
