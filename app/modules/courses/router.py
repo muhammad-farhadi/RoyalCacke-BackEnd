@@ -1,9 +1,10 @@
 # app/modules/courses/router.py
 import os
+import subprocess
 import time
 import shutil
 from pathlib import Path
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, BackgroundTasks
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -26,6 +27,46 @@ os.makedirs(PRIVATE_VIDEO_DIR, exist_ok=True)
 
 
 # --- روت‌های پابلیک (موبایل و وب‌سایت) ---
+def process_video_to_hls(input_video_path: str, output_dir: str):
+    """
+    این تابع توسط BackgroundTasks فراخوانی می‌شود.
+    فایل MP4 خام را می‌گیرد و به یک فایل playlist.m3u8 و ده‌ها فایل .ts ده‌ثانیه‌ای تبدیل می‌کند.
+    """
+    playlist_path = os.path.join(output_dir, "playlist.m3u8")
+    # نام‌گذاری تکه ویدیوها مثلا: segment_000.ts, segment_001.ts
+    segment_path = os.path.join(output_dir, "segment_%03d.ts")
+
+    # دستور استاندارد FFmpeg برای استریم VOD (Video On Demand)
+    command = [
+        "ffmpeg",
+        "-i", input_video_path,
+        "-profile:v", "baseline",  # سازگاری با اکثر دستگاه‌ها (موبایل و وب)
+        "-level", "3.0",
+        "-start_number", "0",
+        "-hls_time", "10",  # طول هر تکه ویدیو ۱۰ ثانیه باشد
+        "-hls_list_size", "0",  # 0 یعنی کل ویدیو در لیست بماند (برای استریم زنده نیست)
+        "-hls_playlist_type", "vod",
+        "-f", "hls",
+        "-hls_segment_filename", segment_path,
+        playlist_path
+    ]
+
+    try:
+        # اجرای دستور تبدیل در پس‌زمینه
+        subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        # پس از پایان موفقیت‌آمیز تبدیل، فایل خام MP4 را پاک می‌کنیم تا فضای سرور پر نشود
+        if os.path.exists(input_video_path):
+            os.remove(input_video_path)
+
+        print(f"پردازش ویدیو با موفقیت تمام شد: {output_dir}")
+
+    except subprocess.CalledProcessError as e:
+        # در صورت بروز خطا (مثلا فایل خراب باشد)
+        error_msg = e.stderr.decode()
+        print(f"خطا در تبدیل ویدیو به HLS: {error_msg}")
+        # در یک پروژه بزرگ‌تر، اینجا می‌توانید وضعیت رکورد دیتابیس را به "خطا در پردازش" تغییر دهید
+
 
 @router.get("/", response_model=List[schemas.CourseResponse])
 def read_all_courses(category: Optional[str] = None, skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
@@ -124,6 +165,7 @@ def create_new_course(
 # --- تغییر ۲: اصلاح روت آپلود ویدیو ---
 @router.post("/lessons", response_model=schemas.LessonResponse, status_code=status.HTTP_201_CREATED)
 def add_video_to_course(
+        background_tasks: BackgroundTasks,  # <--- این پارامتر حیاتی برای تسک‌های پس‌زمینه اضافه شد
         course_id: int = Form(...),
         title: str = Form(...),
         description: Optional[str] = Form(None),
@@ -138,22 +180,21 @@ def add_video_to_course(
     if not course:
         raise HTTPException(status_code=404, detail="دوره مورد نظر یافت نشد.")
 
-    # ذخیره در پوشه امن (PRIVATE_VIDEO_DIR)
+    # ذخیره در پوشه امن
     lesson_folder_name = f"course_{course_id}_lesson_{int(time.time())}"
     lesson_dir = os.path.join(PRIVATE_VIDEO_DIR, lesson_folder_name)
     os.makedirs(lesson_dir, exist_ok=True)
 
-    mock_playlist_path = os.path.join(lesson_dir, "playlist.m3u8")
+    # ذخیره موقت فایل MP4 که ادمین آپلود کرده است
     temp_video_path = os.path.join(lesson_dir, "raw_video.mp4")
-
     with open(temp_video_path, "wb") as buffer:
         shutil.copyfileobj(video_file.file, buffer)
 
-    with open(mock_playlist_path, "w") as f:
-        f.write("#EXTM3U\n#EXT-X-VERSION:3\n# MOCK HLS PLAYLIST FOR SECURITY")
+    # <--- تغییر اساسی: ارجاع تبدیل ویدیو به بک‌گراند تسک --->
+    # ریکوئست منتظر پایان این تابع نمی‌ماند و فوراً ریسپانس ۲۰۰ را برمی‌گرداند
+    background_tasks.add_task(process_video_to_hls, temp_video_path, lesson_dir)
 
-    # مهم: به جای آدرس پابلیک، فقط نام پوشه را در دیتابیس ذخیره می‌کنیم
-    # تا اندپوینت استریم بتواند پوشه را پیدا کند
+    # ذخیره نام پوشه در دیتابیس
     video_folder_reference = lesson_folder_name
 
     lesson_data = schemas.LessonCreate(
