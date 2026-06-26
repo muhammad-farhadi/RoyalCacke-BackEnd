@@ -3,11 +3,15 @@ import os
 import subprocess
 import time
 import shutil
+from datetime import timedelta, datetime
 from pathlib import Path
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, BackgroundTasks, Query
 from fastapi.responses import FileResponse
+from jose import jwt
 from sqlalchemy.orm import Session
 from typing import List, Optional
+
+from starlette.responses import PlainTextResponse
 
 from app.core.database import get_db
 # شما باید get_current_user را در فایل dependencies.py خود داشته باشید
@@ -15,6 +19,7 @@ from app.core.dependencies import RequirePermission, get_current_user
 from app.modules.orders.models import Enrollment  # برای بررسی دسترسی کاربر به دوره
 from app.modules.courses.models import Lesson  # برای کوئری مستقیم جلسات
 from . import schemas, services
+from ...core.security import SECRET_KEY
 
 router = APIRouter()
 
@@ -86,45 +91,40 @@ def read_single_course(course_id: int, db: Session = Depends(get_db)):
 def stream_course_video(
         lesson_id: int,
         filename: str,
-        db: Session = Depends(get_db),
-        current_user=Depends(get_current_user)  # نیازمند ارسال توکن از سمت فلاتر
+        ticket: str = Query(...),  # <--- گرفتن تیکت از URL
+        db: Session = Depends(get_db)
 ):
-    # ۱. پیدا کردن جلسه
+    # ۱. اعتبارسنجی بلیت ۳ ساعته
+    try:
+        payload = jwt.decode(ticket, SECRET_KEY, algorithms=["HS256"])
+        if payload.get("lesson_id") != lesson_id:
+            raise HTTPException(status_code=403, detail="بلیت متعلق به این ویدیو نیست")
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="اعتبار بلیت تمام شده است")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="بلیت نامعتبر است")
+
+    # ۲. پیدا کردن مسیر فایل ویدیو در پوشه خصوصی
     lesson = db.query(Lesson).filter(Lesson.id == lesson_id).first()
-    if not lesson:
-        raise HTTPException(status_code=404, detail="جلسه یافت نشد.")
-
-    # ۲. بررسی خرید دوره (اگر رایگان نیست و کاربر ادمین نیست)
-    if not lesson.is_free and not getattr(current_user, 'is_superuser', False):
-        has_access = db.query(Enrollment).filter(
-            Enrollment.user_id == current_user.id,
-            Enrollment.course_id == lesson.course_id
-        ).first()
-
-        if not has_access:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="لطفاً ابتدا دوره را خریداری کنید."
-            )
-
-    # ۳. پیدا کردن فایل در پوشه خصوصی بر اساس video_url که نام پوشه را نگه میدارد
-    # جلوگیری از directory traversal attacks
     safe_filename = os.path.basename(filename)
     video_path = os.path.join(PRIVATE_VIDEO_DIR, lesson.video_url, safe_filename)
 
-    if not os.path.exists(video_path) or not os.path.isfile(video_path):
+    if not os.path.exists(video_path):
         raise HTTPException(status_code=404, detail="فایل ویدیو یافت نشد.")
 
-    # ۴. تعیین Media Type برای HLS
+    # ۳. جادوی اصلی: تزریق بلیت به داخل فایل m3u8
     if filename.endswith(".m3u8"):
-        media_type = "application/x-mpegURL"
-    elif filename.endswith(".ts"):
-        media_type = "video/MP2T"
-    else:
-        media_type = "application/octet-stream"
+        with open(video_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        # اضافه کردن تیکت به انتهای نام فایل‌های ts.
+        modified_content = content.replace(".ts", f".ts?ticket={ticket}")
+        return PlainTextResponse(content=modified_content, media_type="application/x-mpegURL")
 
-    # ارسال امن فایل بدون اینکه کاربر بتواند آن را مستقیما با IDM دانلود کند
-    return FileResponse(path=video_path, media_type=media_type)
+    # ۴. ارسال تکه‌های ویدیو
+    if filename.endswith(".ts"):
+        return FileResponse(path=video_path, media_type="video/MP2T")
+
+    return FileResponse(path=video_path, media_type="application/octet-stream")
 
 
 # --- روت‌های مدیریت ادمین (Admin Panel) ---
@@ -226,3 +226,30 @@ def remove_course(course_id: int, db: Session = Depends(get_db),
 
     services.delete_course(db, course_id)
     return None
+
+
+@router.get("/{lesson_id}/stream-ticket")
+def get_stream_ticket(lesson_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    # ۱. پیدا کردن جلسه و بررسی دسترسی کاربر (دقیقاً مثل کدهای قبلی خودتون)
+    lesson = db.query(Lesson).filter(Lesson.id == lesson_id).first()
+    if not lesson:
+        raise HTTPException(status_code=404, detail="جلسه یافت نشد.")
+
+    if not lesson.is_free and not getattr(current_user, 'is_superuser', False):
+        has_access = db.query(Enrollment).filter(
+            Enrollment.user_id == current_user.id,
+            Enrollment.course_id == lesson.course_id
+        ).first()
+        if not has_access:
+            raise HTTPException(status_code=403, detail="دسترسی ندارید")
+
+    # ۲. ساخت یک بلیت (JWT) موقت با اعتبار ۳ ساعت فقط برای همین ویدیو
+    expire = datetime.utcnow() + timedelta(hours=3)
+    ticket_payload = {
+        "sub": str(current_user.id),
+        "lesson_id": lesson_id,
+        "exp": expire
+    }
+    ticket = jwt.encode(ticket_payload, SECRET_KEY, algorithm="HS256")
+
+    return {"ticket": ticket}
