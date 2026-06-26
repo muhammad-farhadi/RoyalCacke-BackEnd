@@ -162,3 +162,36 @@ def update_discount_code(db: Session, discount_id: int, discount_in: DiscountUpd
     db.commit()
     db.refresh(db_discount)
     return db_discount
+
+
+def remove_course_from_cart(db: Session, user_id: int, course_id: int):
+    """ حذف یک دوره خاص از سبد خرید کاربر """
+    cart = db.query(models.Cart).filter(models.Cart.user_id == user_id).first()
+    if not cart:
+        raise HTTPException(status_code=404, detail="سبد خرید یافت نشد.")
+
+    cart_item = db.query(models.CartItem).filter(
+        models.CartItem.cart_id == cart.id,
+        models.CartItem.course_id == course_id
+    ).first()
+
+    if not cart_item:
+        raise HTTPException(status_code=404, detail="این دوره در سبد خرید شما وجود ندارد.")
+
+    db.delete(cart_item)
+    db.commit()
+    return True
+
+
+def get_user_enrollments(db: Session, user_id: int):
+    """ استخراج لیست دوره‌های خریداری شده کاربر """
+    return db.query(models.Enrollment).filter(
+        models.Enrollment.user_id == user_id
+    ).order_by(models.Enrollment.created_at.desc()).all()
+
+
+def get_user_payments(db: Session, user_id: int):
+    """ استخراج لیست پرداخت‌های کاربر از طریق ارتباط با فاکتورها """
+    return db.query(models.Payment).join(models.Order).filter(
+        models.Order.user_id == user_id
+    ).order_by(models.Payment.created_at.desc()).all()

@@ -76,3 +76,26 @@ class DiscountUpdate(BaseModel):
     usage_limit: Optional[int] = None
     valid_until: Optional[datetime] = None
     is_active: Optional[bool] = None
+
+
+class PaymentResponse(BaseModel):
+    id: int
+    amount: int
+    gateway: str
+    authority: Optional[str] = None
+    ref_id: Optional[str] = None
+    status: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class EnrollmentResponse(BaseModel):
+    id: int
+    course_id: int
+    course_title: Optional[str] = None
+    course_image: Optional[str] = None
+    purchased_price: int
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

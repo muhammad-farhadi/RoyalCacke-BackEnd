@@ -172,3 +172,56 @@ def edit_discount_code(
         )
 
     return updated_discount
+
+
+@router.delete("/cart/{course_id}", status_code=status.HTTP_200_OK)
+def remove_from_cart(
+        course_id: int,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_active_user)
+):
+    """
+    حذف یک دوره از سبد خرید
+    """
+    services.remove_course_from_cart(db, current_user.id, course_id)
+    return {"success": True, "message": "دوره با موفقیت از سبد خرید حذف شد."}
+
+
+# --- دوره‌های من ---
+@router.get("/my-courses", response_model=List[schemas.EnrollmentResponse])
+def get_my_courses(
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_active_user)
+):
+    """
+    دریافت لیست دوره‌هایی که کاربر با موفقیت خریداری کرده است
+    """
+    enrollments = services.get_user_enrollments(db, current_user.id)
+    response_data = []
+
+    for en in enrollments:
+        # پیدا کردن اطلاعات دوره برای نمایش به کاربر
+        course = db.query(Course).filter(Course.id == en.course_id).first()
+        if course:
+            response_data.append({
+                "id": en.id,
+                "course_id": en.course_id,
+                "course_title": course.title,
+                "course_image": getattr(course, 'image_url', None),
+                "purchased_price": en.purchased_price,
+                "created_at": en.created_at
+            })
+
+    return response_data
+
+
+# --- تاریخچه پرداخت‌ها ---
+@router.get("/my-payments", response_model=List[schemas.PaymentResponse])
+def get_my_payments(
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_active_user)
+):
+    """
+    دریافت لیست تمام پرداخت‌های موفق و ناموفق کاربر
+    """
+    return services.get_user_payments(db, current_user.id)
