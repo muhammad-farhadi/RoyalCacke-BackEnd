@@ -14,7 +14,9 @@
     {"name": "discount:read", "description": "امکان مشاهده لیست کدهای تخفیف"},
     {"name": "discount:update", "description": "امکان ویرایش کدهای تخفیف موجود"},
 
-    {"name": "user:read", "description": "خواندن اطلاعات کاربران"}
+    {"name": "user:read", "description": "خواندن اطلاعات کاربران"},
+
+    {"name": "support:read", "description": "امکان مشاهده لیست چت‌ها و تاریخچه پیام‌های کاربران"}
   ],
   "roles": []
 }
