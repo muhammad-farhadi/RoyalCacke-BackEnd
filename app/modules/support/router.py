@@ -115,10 +115,10 @@ async def get_user_from_token(token: str, db: Session) -> User:
     """تابع کمکی برای تایید هویت در وب‌سوکت"""
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = payload.get("sub")
-        if user_id is None:
+        user_sub = payload.get("sub")
+        if user_sub is None:
             raise ValueError("Token invalid")
-        user = db.query(User).filter(User.id == int(user_id)).first()
+        user = db.query(User).filter(User.phone_number == str(user_sub)).first()
         if not user:
             raise ValueError("User not found")
         return user
