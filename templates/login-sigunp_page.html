@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ورود به پنل مدیریت | رویال کیک</title>
+    <link rel="stylesheet" href="/static/css/all.min.css?v=6.4.0">
+    <!-- اصلاح مسیر CSS -->
+    <link rel="stylesheet" href="/static/css/login-sigunp_page.css">
+    <style>
+        .custom-popup {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: #22c55e;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(34, 197, 94, 0.3);
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 9999;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .custom-popup.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        .custom-popup i {
+            font-size: 20px;
+        }
+        .custom-popup.error {
+            background: #ef4444;
+            box-shadow: 0 10px 25px rgba(239, 68, 68, 0.3);
+        }
+        .auth-title-admin {
+            text-align: center;
+            color: #4b5563;
+            font-size: 14px;
+            margin-bottom: 25px;
+            font-weight: bold;
+        }
+        .input-group {
+            position: relative;
+        }
+        .toggle-password {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #9ca3af;
+            transition: color 0.2s;
+            z-index: 10;
+            font-size: 16px;
+            padding: 5px;
+        }
+        .toggle-password:hover {
+            color: #4b5563;
+        }
+        .input-group input[type="password"],
+        .input-group input[type="text"] {
+            padding-left: 40px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="statusPopup" class="custom-popup">
+        <i id="popupIcon" class="fas fa-check-circle"></i>
+        <span id="popupMessage">ورود با موفقیت انجام شد!</span>
+    </div>
+
+    <div class="auth-card">
+        <div class="auth-logo">رویال <span>کیک</span></div>
+        <div class="auth-title-admin">🔐 ورود به پنل مدیریت سیستم</div>
+
+        <form id="loginForm" class="auth-form active">
+            <div class="input-group">
+                <input type="tel" id="login-mobile" inputmode="numeric" pattern="[0-9]*" required placeholder=" " maxlength="11">
+                <label>شماره موبایل مدیر</label>
+            </div>
+            <div class="input-group">
+                <input type="password" id="login-password" required placeholder=" ">
+                <label>رمز عبور</label>
+                <i class="far fa-eye toggle-password" id="togglePasswordIcon"></i>
+            </div>
+            <button type="submit" class="btn-auth">ورود به پنل مدیریت <i class="fas fa-sign-in-alt"></i></button>
+        </form>
+    </div>
+
+    <!-- اصلاح مسیر JS -->
+    <script src="/static/js/api.js"></script>
+
+    <script>
+        const passwordInput = document.getElementById('login-password');
+        const togglePasswordIcon = document.getElementById('togglePasswordIcon');
+
+        togglePasswordIcon.addEventListener('click', function() {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            this.classList.toggle('fa-eye');
+            this.classList.toggle('fa-eye-slash');
+        });
+
+        function showNotification(message, type = 'success') {
+            const popup = document.getElementById('statusPopup');
+            const popupMsg = document.getElementById('popupMessage');
+            const popupIcon = document.getElementById('popupIcon');
+
+            popupMsg.textContent = message;
+
+            if (type === 'error') {
+                popup.classList.add('error');
+                popupIcon.className = 'fas fa-exclamation-circle';
+            } else {
+                popup.classList.remove('error');
+                popupIcon.className = 'fas fa-check-circle';
+            }
+
+            popup.classList.add('show');
+            setTimeout(() => {
+                popup.classList.remove('show');
+            }, 3000);
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const mobile = document.getElementById('login-mobile').value.trim();
+            const password = document.getElementById('login-password').value;
+
+            if (mobile.length !== 11) {
+                showNotification('لطفاً شماره موبایل ۱۱ رقمی معتبر وارد کنید.', 'error');
+                return;
+            }
+
+            try {
+                // ارسال درخواست به api.js
+                const data = await ApiService.login(mobile, password);
+
+                if (data.access_token) {
+                    // ذخیره توکن‌ها
+                    localStorage.setItem('access_token', data.access_token);
+                    if(data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
+                    localStorage.setItem('user_mobile', mobile);
+
+                    showNotification('خوش آمدید مدیر گرامی! در حال انتقال...', 'success');
+
+                    // انتقال به صفحه داشبورد ادمین
+                    setTimeout(() => {
+                        window.location.href = '/admin'; // آدرس روت داشبورد در FastAPI
+                    }, 2000);
+                } else {
+                    throw new Error('توکن‌های امنیتی به درستی از سرور دریافت نشدند.');
+                }
+
+            } catch (error) {
+                console.error('Login error:', error);
+                showNotification(error.message || 'خطا در برقراری ارتباط با سرور یا اطلاعات اشتباه است', 'error');
+            }
+        });
+    </script>
+</body>
+</html>

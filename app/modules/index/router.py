@@ -90,3 +90,55 @@ def handle_contact_submit(
     db.add(db_message)
     db.commit()
     return {"success": True, "message": "پیام شما با موفقیت ثبت شد."}
+
+
+@router.get("/courses", response_class=HTMLResponse)
+def render_courses_page(request: Request, db: Session = Depends(get_db)):
+    """
+    رندر کردن صفحه لیست تمامی دوره‌های آموزشی برای کاربران (فرانت‌اند)
+    """
+    # واکشی تمام دوره‌ها (می‌توانید limit را بردارید یا عدد بزرگی بدهید)
+    all_courses = get_courses(db, limit=100)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="course.html",  # نام فایل قالب فرانت‌اند
+        context={
+            "courses": all_courses
+        }
+    )
+
+
+@router.get("/courses/{course_id}", response_class=HTMLResponse)
+def render_single_course(request: Request, course_id: int, db: Session = Depends(get_db)):
+    """
+    رندر کردن صفحه داخلی یک دوره خاص (اگر قالبی برای آن دارید)
+    """
+    # توجه: برای این بخش شما نیاز به یک قالب مثلاً single-course.html دارید
+    # فعلا برای جلوگیری از خطای 404 اگر کاربر روی "مشاهده دوره" کلیک کرد این روت را گذاشتیم
+    from app.modules.courses.services import get_course_by_id
+    course = get_course_by_id(db, course_id=course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="دوره یافت نشد")
+
+    # اگر قالب single-course.html را فرانت کار زده، نام آن را اینجا بگذارید
+    # در غیر این صورت فعلا به همان صفحه دوره‌ها برش می‌گردانیم یا پیام می‌دهیم
+    return templates.TemplateResponse(
+        request=request,
+        name="course.html",  # موقتاً به همین صفحه هدایت شود تا زمانی که قالب تکی آماده شود
+        context={
+            "courses": [course]
+        }
+    )
+
+
+@router.get("/login", response_class=HTMLResponse)
+def render_login_page(request: Request):
+    """
+    رندر کردن فرم ورود به پنل مدیریت
+    """
+    return templates.TemplateResponse(
+        request=request,
+        name="login-sigunp_page.html",
+        context={}
+    )

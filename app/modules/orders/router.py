@@ -1,6 +1,6 @@
 # app/modules/orders/router.py
 from typing import List
-
+import requests
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -12,6 +12,14 @@ from . import schemas, services, models
 import random
 
 router = APIRouter()
+
+# تنظیمات زرین‌پال (بهتر است بعداً به فایل .env منتقل شود)
+ZARINPAL_MERCHANT_ID = "00000000-0000-0000-0000-000000000000"
+ZARINPAL_REQUEST_URL = "https://api.zarinpal.com/pg/v4/payment/request.json"
+ZARINPAL_VERIFY_URL = "https://api.zarinpal.com/pg/v4/payment/verify.json"
+ZARINPAL_STARTPAY_URL = "https://www.zarinpal.com/pg/StartPay/"
+# این آدرس باید دقیقاً همانی باشد که فرانت‌اند یا سرور شما به عنوان برگشت روی آن گوش می‌دهد
+CALLBACK_URL = "http://localhost:8000/orders/verify-payment"
 
 
 # --- مدیریت سبد خرید ---
@@ -56,48 +64,135 @@ def get_user_cart(db: Session = Depends(get_db), current_user: User = Depends(ge
 
 
 # --- پرداخت و فاکتور ---
-@router.post("/checkout", response_model=schemas.OrderResponse)
+@router.post("/checkout")
 def checkout(data: schemas.CheckoutRequest, db: Session = Depends(get_db),
              current_user: User = Depends(get_current_active_user)):
     """
-    تبدیل سبد خرید به فاکتور نهایی و محاسبه کد تخفیف
-    در سیستم واقعی بعد از این مرحله، باید کاربر رو به لینک درگاه پرداخت ریدایرکت کنید.
+    تبدیل سبد خرید به فاکتور نهایی و ارجاع به درگاه زرین‌پال
     """
     order = services.process_checkout(db, current_user.id, data.discount_code)
 
-    # اینجا می‌تونید رکورد Payment رو بسازید و وصل بشید به زرین‌پال
-    # payment = models.Payment(order_id=order.id, amount=order.total_amount, gateway="zarinpal")
+    # ۱. اگر مبلغ کل صفر شد (مثلاً تخفیف ۱۰۰٪)، نیازی به درگاه نیست
+    if order.total_amount == 0:
+        order.status = "paid"
+        for item in order.items:
+            enrollment = models.Enrollment(
+                user_id=order.user_id, course_id=item.course_id, order_id=order.id, purchased_price=0
+            )
+            db.add(enrollment)
+        db.commit()
+        return {"message": "سفارش با موفقیت و به صورت رایگان ثبت شد.", "payment_url": None, "order_id": order.id}
 
-    return order
+    # ۲. درخواست ایجاد تراکنش به زرین‌پال
+    payload = {
+        "merchant_id": ZARINPAL_MERCHANT_ID,
+        "amount": order.total_amount,
+        "currency": "IRT",  # واحد پول تومان
+        "callback_url": CALLBACK_URL,
+        "description": f"خرید دوره از آکادمی - فاکتور شماره {order.id}",
+        "metadata": {"mobile": current_user.phone_number}
+    }
+
+    try:
+        response = requests.post(ZARINPAL_REQUEST_URL, json=payload, timeout=10)
+        res_data = response.json()
+
+        # بررسی موفقیت‌آمیز بودن درخواست
+        if res_data.get("data") and res_data["data"].get("code") == 100:
+            authority = res_data["data"]["authority"]
+            payment_url = f"{ZARINPAL_STARTPAY_URL}{authority}"
+
+            # ۳. ذخیره در جدول Payment
+            payment = models.Payment(
+                order_id=order.id,
+                amount=order.total_amount,
+                gateway="zarinpal",
+                authority=authority,
+                status="pending"
+            )
+            db.add(payment)
+            db.commit()
+
+            return {"message": "در حال انتقال به درگاه...", "payment_url": payment_url, "order_id": order.id}
+        else:
+            errors = res_data.get("errors", "خطای نامشخص")
+            raise HTTPException(status_code=400, detail=f"خطا در ایجاد تراکنش: {errors}")
+
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail="خطا در ارتباط با سرورهای زرین‌پال.")
 
 
-@router.post("/mock-verify")
-def mock_verify_payment(data: schemas.VerifyPaymentRequest, db: Session = Depends(get_db),
-                        current_user: User = Depends(get_current_active_user)):
-    """ شبیه‌سازی بازگشت از درگاه پرداخت و باز کردن دسترسی دوره‌ها """
-    order = db.query(models.Order).filter(models.Order.id == data.order_id,
-                                          models.Order.user_id == current_user.id).first()
+@router.get("/verify-payment")
+def verify_zarinpal_payment(Authority: str, Status: str, db: Session = Depends(get_db)):
+    """
+    آدرس بازگشتی از درگاه زرین‌پال. بررسی و تایید نهایی پرداخت.
+    """
+    # ۱. پیدا کردن رکورد پرداخت با استفاده از Authority
+    payment = db.query(models.Payment).filter(models.Payment.authority == Authority).first()
 
-    if not order:
-        raise HTTPException(status_code=404, detail="فاکتور یافت نشد.")
-    if order.status == "paid":
-        raise HTTPException(status_code=400, detail="این فاکتور قبلا پرداخت شده است.")
+    if not payment:
+        raise HTTPException(status_code=404, detail="تراکنش مورد نظر یافت نشد.")
 
-    # ۱. آپدیت فاکتور و پرداخت
-    order.status = "paid"
+    if payment.status == "paid":
+        return {"message": "این تراکنش قبلاً با موفقیت تایید شده است."}
 
-    # ۲. ایجاد دسترسی برای تک تک آیتم‌های فاکتور
-    for item in order.items:
-        enrollment = models.Enrollment(
-            user_id=order.user_id,
-            course_id=item.course_id,
-            order_id=order.id,
-            purchased_price=item.price
-        )
-        db.add(enrollment)
+    # ۲. اگر کاربر پرداخت را لغو کرده باشد
+    if Status != "OK":
+        payment.status = "canceled"
+        db.commit()
+        # در سیستم واقعی بهتر است اینجا کاربر را به یک صفحه HTML (مثل صفحه پرداخت ناموفق) ریدایرکت کنید
+        raise HTTPException(status_code=400, detail="پرداخت ناموفق بود یا توسط شما لغو شد.")
 
-    db.commit()
-    return {"success": True, "message": "پرداخت موفق بود و دوره‌ها به حساب شما اضافه شد."}
+    # ۳. تایید نهایی تراکنش (Verify)
+    verify_payload = {
+        "merchant_id": ZARINPAL_MERCHANT_ID,
+        "amount": payment.amount,
+        "authority": Authority
+    }
+
+    try:
+        response = requests.post(ZARINPAL_VERIFY_URL, json=verify_payload, timeout=10)
+        res_data = response.json()
+
+        # کد 100 یعنی پرداخت موفق، کد 101 یعنی پرداخت قبلا تایید شده
+        if res_data.get("data") and res_data["data"].get("code") in [100, 101]:
+            ref_id = res_data["data"]["ref_id"]
+
+            # آپدیت وضعیت پرداخت
+            payment.status = "paid"
+            payment.ref_id = str(ref_id)
+
+            # آپدیت وضعیت فاکتور
+            order = db.query(models.Order).filter(models.Order.id == payment.order_id).first()
+            if order:
+                order.status = "paid"
+
+                # ایجاد دسترسی دوره‌ها برای کاربر
+                for item in order.items:
+                    enrollment = models.Enrollment(
+                        user_id=order.user_id,
+                        course_id=item.course_id,
+                        order_id=order.id,
+                        purchased_price=item.price
+                    )
+                    db.add(enrollment)
+
+            db.commit()
+
+            # در سیستم واقعی اینجا باید یک ریدایرکت به صفحه پرداخت موفق فرانت‌اند انجام دهید:
+            # from fastapi.responses import RedirectResponse
+            # return RedirectResponse(url=f"http://your-frontend.com/payment/success?ref={ref_id}")
+
+            return {"success": True, "message": "پرداخت با موفقیت انجام شد.", "ref_id": ref_id}
+
+        else:
+            payment.status = "failed"
+            db.commit()
+            errors = res_data.get("errors", "خطا در تایید تراکنش")
+            raise HTTPException(status_code=400, detail=f"پرداخت تایید نشد: {errors}")
+
+    except requests.exceptions.RequestException:
+        raise HTTPException(status_code=500, detail="خطا در ارتباط با سرور زرین‌پال جهت تایید تراکنش.")
 
 
 @router.post("/discounts", response_model=schemas.DiscountResponse, status_code=status.HTTP_201_CREATED)

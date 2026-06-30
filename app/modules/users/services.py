@@ -1,5 +1,6 @@
 # app/modules/users/services.py
 import random
+import requests
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 from . import models, schemas
@@ -11,6 +12,73 @@ from .models import User
 
 def get_user_by_phone(db: Session, phone_number: str):
     return db.query(models.User).filter(models.User.phone_number == phone_number).first()
+
+
+SMS_PANEL_USERNAME = ""
+SMS_PANEL_PASSWORD = ""
+SMS_PRIMARY_LINE = ""  # خط عمومی اول
+SMS_SUPPORT_LINE_1 = "مثلا_5000xxxx"  # خط عمومی دوم (بکاپ)
+SMS_SUPPORT_LINE_2 = "مثلا_1000xxxx"  # خط عمومی سوم (بکاپ)
+SMS_PANEL_API_URL = "https://rest.payamak-panel.com/api/SmartSMS/Send"
+
+
+def send_otp_sms(phone_number: str, otp_code: str):
+    """
+    ارسال پیامک تایید با استفاده از وب‌سرویس SmartSMS و خطوط اشتراکی پشتیبان
+    """
+    payload = {
+        "username": SMS_PANEL_USERNAME,
+        "password": SMS_PANEL_PASSWORD,
+        "to": phone_number,
+        "from": SMS_PRIMARY_LINE,  # تلاش اول با این خط
+        "fromSupportOne": SMS_SUPPORT_LINE_1,  # تلاش دوم در صورت شکست
+        "fromSupportTwo": SMS_SUPPORT_LINE_2,  # تلاش سوم در صورت شکست
+        "text": f"کد تایید شما در رویال کیک:\n{otp_code}"
+    }
+
+    try:
+        response = requests.post(SMS_PANEL_API_URL, json=payload, timeout=10)
+        data = response.json()
+
+        if data.get("RetStatus") == 1 and data.get("StrRetStatus") == "Ok":
+            return True
+        else:
+            print(f"[SMS ERROR] Failed to send to {phone_number}. Response: {data}")
+            return False
+    except Exception as e:
+        print(f"[SMS EXCEPTION] {str(e)}")
+        return False
+
+# =========================================================================
+
+# بقیه توابع بالا مثل get_user_by_phone و create_user سر جای خودشان بمانند...
+
+def create_user_and_send_otp(db: Session, user: schemas.UserCreate):
+    # ۱. تولید کد ۶ رقمی تصادفی
+    otp = str(random.randint(100000, 999999))
+    expire_time = datetime.now(timezone.utc) + timedelta(minutes=2)
+
+    # ۲. هش کردن پسورد
+    hashed_password = get_password_hash(user.password)
+
+    # ۳. ذخیره کاربر به صورت تایید نشده
+    db_user = models.User(
+        full_name=user.full_name,
+        phone_number=user.phone_number,
+        hashed_password=hashed_password,
+        is_verified=False,
+        otp_code=otp,
+        otp_expire=expire_time
+    )
+
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+
+    # ۴. ارسال پیامک واقعی به جای Mock
+    send_otp_sms(user.phone_number, otp)
+
+    return db_user
 
 
 def create_user(db: Session, user: schemas.UserCreate):

@@ -21,6 +21,10 @@
         </div>
     </div>
 
+    <div class="nav-buttons">
+        <a href="#pwa-section" class="btn-download"><i class="fa-solid fa-mobile-screen-button"></i> دانلود اپلیکیشن</a>
+    </div>
+
     <div class="menu-toggle" id="mobile-menu">
         <i class="fa-solid fa-bars"></i>
     </div>
@@ -34,11 +38,6 @@
             <li><a href="#contact-container">تماس با ما</a></li>
         </ul>
     </nav>
-
-    <div class="nav-buttons">
-        <a href="#pwa-container" class="btn-download"><i class="fa-solid fa-mobile-screen-button"></i> دانلود
-            اپلیکیشن</a>
-    </div>
 </header>
 
 <section class="slider-container">
@@ -47,7 +46,7 @@
         <div class="slide-content">
             <h1>دوره‌های تخصصی شیرینی</h1>
             <p>خلاقیت خود را با تکنیک‌های مدرن شکوفا کنید</p>
-            <a href="#courses" class="btn-primary">مشاهده دوره‌ها</a>
+            <a href="#pwa-section" class="btn-primary">مشاهده دوره‌ها</a>
         </div>
     </div>
 
@@ -56,7 +55,7 @@
         <div class="slide-content">
             <h1>هنر پخت کیک را حرفه‌ای بیاموزید</h1>
             <p>از پایه تا پیشرفته، همراه با رویال کیک</p>
-            <a href="#courses" class="btn-primary">شروع یادگیری</a>
+            <a href="#pwa-section" class="btn-primary">شروع یادگیری</a>
         </div>
     </div>
 
@@ -65,7 +64,7 @@
         <div class="slide-content">
             <h1>دوره‌های تخصصی شیرینی</h1>
             <p>خلاقیت خود را با تکنیک‌های مدرن شکوفا کنید</p>
-            <a href="#courses" class="btn-primary">مشاهده دوره‌ها</a>
+            <a href="#pwa-section" class="btn-primary">مشاهده دوره‌ها</a>
         </div>
     </div>
 
@@ -74,7 +73,7 @@
         <div class="slide-content">
             <h1>دوره‌های تخصصی شیرینی</h1>
             <p>خلاقیت خود را با تکنیک‌های مدرن شکوفا کنید</p>
-            <a href="#courses" class="btn-primary">مشاهده دوره‌ها</a>
+            <a href="#pwa-section" class="btn-primary">مشاهده دوره‌ها</a>
         </div>
     </div>
 
@@ -83,7 +82,7 @@
         <div class="slide-content">
             <h1>دوره‌های تخصصی شیرینی</h1>
             <p>خلاقیت خود را با تکنیک‌های مدرن شکوفا کنید</p>
-            <a href="#courses" class="btn-primary">مشاهده دوره‌ها</a>
+            <a href="#pwa-section" class="btn-primary">مشاهده دوره‌ها</a>
         </div>
     </div>
 
@@ -92,15 +91,46 @@
         <div class="slide-content">
             <h1>دوره‌های تخصصی شیرینی</h1>
             <p>خلاقیت خود را با تکنیک‌های مدرن شکوفا کنید</p>
-            <a href="#courses" class="btn-primary">مشاهده دوره‌ها</a>
+            <a href="#pwa-section" class="btn-primary">مشاهده دوره‌ها</a>
         </div>
     </div>
 
-    <a class="next" onclick="changeSlide(1)">&#10094;</a>
     <a class="prev" onclick="changeSlide(-1)">&#10095;</a>
-
+    <a class="next" onclick="changeSlide(1)">&#10094;</a>
 
     <div class="dots-container" id="dotsContainer"></div>
+</section>
+
+<section class="intro-courses-section">
+    <div class="intro-courses-container">
+        <div class="intro-course-item">
+            <div class="circle-img">
+                <img src="/static/img/20230829_150959_E3E8C2F7-32A7-47DB-B707-8A377F5B7F2D.webp" alt="دوره شیرینی">
+            </div>
+            <h4>آموزش رایگان</h4>
+        </div>
+        <div class="intro-course-item">
+            <div class="circle-img">
+                <img src="/static/img/20230829_151140_89E97E06-CE04-4BBA-9BFB-9E110BC9FEC8.webp" alt="دوره جامع کیک">
+            </div>
+            <h4>دوره کیک و کوکی کافه ای</h4>
+        </div>
+        <div class="intro-course-item">
+            <div class="circle-img">
+                <img src="/static/img/20230829_153101_E074A852-5758-4302-B7E0-203B36B34DCD.webp" alt="دوره چیزکیک">
+            </div>
+            <h4>دوره چیز کیک کافه ای</h4>
+        </div>
+        <div class="intro-course-item">
+            <div class="circle-img">
+                <img src="/static/img/20230829_095147_72A432F7-3E40-48F7-A618-4FFCBC50095B.webp" alt="دوره شیرینی">
+            </div>
+            <h4>دوره شیرینی نوروز</h4>
+        </div>
+    </div>
+    <div class="intro-btn-container">
+        <a href="/courses" class="btn-primary">نمایش دوره‌ها</a>
+    </div>
 </section>
 
 <section class="courses-container" id="courses">
@@ -128,7 +158,7 @@
                     <div class="price">
                         <span class="amount">{{ "{:,}".format(course.price) }}</span> تومان
                     </div>
-                    <a href="#pwa-container" class="btn-course">ثبت‌نام دوره</a>
+                    <a href="#pwa-section" class="btn-course">ثبت‌نام دوره</a>
                 </div>
             </div>
         </div>
@@ -136,7 +166,7 @@
     </div>
 </section>
 
-<section class="pwa-container" id="pwa-container">
+<section class="pwa-container" id="pwa-section">
     <div class="pwa-wrapper">
         <div class="pwa-content">
             <span class="pwa-tag">نسخه بدون نیاز به نصب (PWA)</span>
@@ -174,8 +204,8 @@
         {% for article in articles %}
         <article class="blog-card">
             <div class="blog-image">
-            <img src="{{ article.image_url if article.image_url else '/static/img/sweet31.webp' }}"
-                 alt="{{ article.title }}">
+                <img src="{{ article.image_url if article.image_url else '/static/img/sweet31.webp' }}"
+                     alt="{{ article.title }}">
                 {% if article.tags %}
                 <span class="blog-category">{{ article.tags.split(',')[0] }}</span>
                 {% endif %}
@@ -256,7 +286,7 @@
 
     <div class="contact-wrapper">
         <div class="contact-form-side">
-            <form id="royalContactForm" method="POST" action="/contact">
+            <form id="royalContactForm" onsubmit="event.preventDefault(); return false;">
                 <div class="input-group">
                     <input type="text" name="name" id="contactName" required placeholder=" ">
                     <label>نام و نام خانوادگی</label>
@@ -269,8 +299,8 @@
                     <textarea name="message" id="contactMessage" rows="4" required placeholder=" "></textarea>
                     <label>متن پیام شما...</label>
                 </div>
-                <button type="submit" class="btn-submit-contact">ارسال پیام <i class="fa-solid fa-paper-plane"></i>
-                </button>
+                <button type="button" class="btn-submit-contact" onclick="openContactModal()">ارسال پیام <i
+                        class="fa-solid fa-paper-plane"></i></button>
             </form>
         </div>
 
@@ -334,15 +364,26 @@
             </ul>
         </div>
 
-<!--        <div class="footer-column newsletter-col">-->
-<!--            <img src="/static/img/enamad.png">-->
-<!--        </div>-->
+        <div class="footer-column newsletter-col">
+            <img src="/static/img/enamad.png">
+        </div>
     </div>
 
     <div class="footer-bottom">
         <p>تمامی حقوق مادی و معنوی این سایت متعلق به <span>آکادمی رویال کیک</span> می‌باشد</p>
     </div>
 </footer>
+
+<div id="contactModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-icon">
+            <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <h3>ارسال موفقیت‌آمیز</h3>
+        <p id="modalUserMessage">کاربر عزیز، پیام شما با موفقیت ثبت شد.</p>
+        <button class="btn-close-modal" onclick="closeContactModal()">متوجه شدم</button>
+    </div>
+</div>
 
 <script src="/static/js/script.js"></script>
 </body>

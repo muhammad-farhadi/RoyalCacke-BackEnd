@@ -19,23 +19,18 @@
     </header>
 
     <main class="blog-grid">
-
         {% for article in articles %}
         <article class="blog-card">
             <div class="card-img">
-                <img src="{{ article.image_url if article.image_url else '/static/img/sweet31.webp' }}"
+                <img src="{{ article.image_url if article.image_url else '/static/img/default-blog.png' }}"
                      alt="{{ article.title }}">
-
                 {% if article.tags %}
                 <span class="card-badge">{{ article.tags.split(',')[0] }}</span>
-                {% else %}
-                <span class="card-badge">آموزش</span>
                 {% endif %}
             </div>
             <div class="card-content">
                 <h3>{{ article.title }}</h3>
-                <p>{{ article.meta_description if article.meta_description else article.content[:150] | striptags +
-                    '...' }}</p>
+                <p>{{ article.meta_description if article.meta_description else article.content[:120] + '...' }}</p>
                 <div class="card-footer">
                     <a href="/blog/{{ article.slug }}" class="read-more">ادامه مطلب <i
                             class="fas fa-arrow-left"></i></a>
@@ -43,13 +38,7 @@
                 </div>
             </div>
         </article>
-        {% else %}
-        <div style="text-align: center; grid-column: 1/-1; padding: 40px; color: #777;">
-            <i class="far fa-folder-open" style="font-size: 48px; margin-bottom: 15px;"></i>
-            <p>هنوز هیچ مقاله‌ای در وبلاگ منتشر نشده است.</p>
-        </div>
         {% endfor %}
-
     </main>
 </div>
 

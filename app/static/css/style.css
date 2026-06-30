@@ -1262,7 +1262,48 @@ body {
     .gallery-item { height: 200px; }
 } */
 
+/* استایل باکس پیام‌های وضعیت فرم تماس */
+#royalContactForm {
+    position: relative; /* برای تنظیم موقعیت پیام در صورت نیاز */
+}
 
+.form-alert-msg {
+    margin-top: 15px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: bold;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    animation: slideInUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    transition: all 0.4s ease;
+}
+
+/* حالت موفقیت (سبز ملایم کافی‌شاپی) */
+.form-alert-msg.success {
+    background-color: #e6f4ea;
+    color: #137333;
+    border: 1px solid #c2e7cd;
+}
+
+/* حالت خطا (قرمز ملایم) */
+.form-alert-msg.error {
+    background-color: #fce8e6;
+    color: #c5221f;
+    border: 1px solid #fad2cf;
+}
+
+/* انیمیشن ورود ظریف پیام */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 /* ================= Footer Section ================= */
 .royal-footer {
     background-color: #0c4d3b;
@@ -1439,7 +1480,92 @@ body {
     color: #fc94a1;
     font-weight: bold;
 }
+/* کل صفحه پوشانده می‌شود */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px); /* افکت شیشه‌ای مات */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s ease;
+}
 
+/* وقتی پاپ‌آپ فعال می‌شود */
+.modal-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* باکس اصلی پیام داخل پاپ‌آپ */
+.modal-content {
+    background: #fff;
+    padding: 30px;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    transform: translateY(-50px);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* انیمیشن جهش باکس به سمت بالا هنگام باز شدن */
+.modal-overlay.show .modal-content {
+    transform: translateY(0);
+}
+
+/* آیکون تایید سبز رنگ */
+.modal-icon {
+    font-size: 3.5rem;
+    color: #2ec4b6;
+    margin-bottom: 15px;
+    animation: scaleUp 0.5s ease;
+}
+
+.modal-content h3 {
+    font-size: 1.4rem;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.modal-content p {
+    font-size: 0.95rem;
+    color: #666;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+/* دکمه بستن مپ‌آپ */
+.btn-close-modal {
+    background: #ff9f1c;
+    color: #fff;
+    border: none;
+    padding: 10px 30px;
+    font-size: 1rem;
+    font-family: inherit;
+    border-radius: 25px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(255, 159, 28, 0.3);
+    transition: all 0.2s ease;
+}
+
+.btn-close-modal:hover {
+    background: #e78b09;
+    transform: translateY(-2px);
+}
+
+@keyframes scaleUp {
+    from { transform: scale(0); }
+    to { transform: scale(1); }
+}
 /* ریسپانسیو فوتر برای موبایل */
 @media screen and (max-width: 768px) {
     .footer-grid {
@@ -1462,6 +1588,154 @@ body {
     }
 }
 
+
+
+
+.intro-courses-section {
+    padding: 60px 5%;
+    text-align: center;
+    background-color: #ffffff;
+    margin-bottom: 20px;
+}
+
+.intro-courses-container {
+    display: flex;
+    justify-content: center;
+    gap: 60px;
+    flex-wrap: wrap;
+    margin-bottom: 35px;
+}
+
+.intro-course-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 180px;
+}
+
+.intro-course-item .circle-img {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    overflow: hidden;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    border: 4px solid var(--accent-color);
+    transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.intro-course-item .circle-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.intro-course-item:hover .circle-img {
+    transform: scale(1.08);
+    border-color: var(--primary-color);
+}
+
+.intro-course-item h4 {
+    margin-top: 18px;
+    color: var(--primary-color);
+    font-size: 16px;
+    font-weight: bold;
+}
+
+
+.intro-btn-container {
+    margin-top: 25px;
+    display: flex;
+    justify-content: center;
+    padding: 9px 28px;
+
+}
+
+.intro-btn-container .btn-primary {
+    padding: 12px 40px;
+    font-size: 16px;
+    box-shadow: 0 4px 15px rgba(252, 148, 161, 0.4);
+}
+
+/* بخش دوره‌ها */
+.courses-container {
+    padding: 60px 5%;
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.section-header h2 {
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+}
+
+.courses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1max));
+    gap: 30px;
+}
+
+.course-card {
+    background: var(--white);
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    transition: var(--transition);
+}
+
+.course-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.course-image {
+    position: relative;
+    height: 220px;
+}
+
+.course-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.badge {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background-color: var(--accent-color);
+    color: var(--white);
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+}
+
+.course-content {
+    padding: 25px;
+}
+
+.course-content h3 {
+    font-size: 1.25rem;
+    color: var(--primary-color);
+    margin-bottom: 15px;
+}
+
+.course-info {
+    display: flex;
+    gap: 20px;
+    font-size: 0.9rem;
+    color: #777;
+    margin-bottom: 20px;
+}
+
+.course-info i {
+    color: var(--accent-color);
+    margin-left: 5px;
+}
+
 /* ================= Responsive (Mobile) ================= */
 @media screen and (max-width: 768px) {
     .top-bar {
@@ -1476,7 +1750,8 @@ body {
     }
 
     .menu-toggle {
-        display: block;
+        display: block !important;
+        order: 3;
     }
 
     .nav-elements {
@@ -1504,8 +1779,28 @@ body {
         margin: 15px 0;
     }
 
+    .navbar {
+    display: flex;
+    justify-content: space-between !important;
+    align-items: center;
+    flex-direction: row;
+    }    
+    .logo {
+        order: 1;
+
+    }  
+
     .nav-buttons {
-        display: none;
+        /* display: none; */
+        display: block;
+        order: 2;
+        margin: 0 auto !important;
+        text-align: center;
+    }
+    .nav-buttons .btn-download{
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        white-space: nowrap;
     }
 
     .slider-container {

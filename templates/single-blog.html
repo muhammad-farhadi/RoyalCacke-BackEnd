@@ -15,30 +15,28 @@
         <a href="/blog" class="back-to-blogs"><i class="fas fa-arrow-right"></i> بازگشت به مقالات</a>
     </div>
 
-    <img src="{{ article.image_url if article.image_url else '/static/img/sweet31.webp' }}"
+    <img src="{{ article.image_url if article.image_url else '/static/img/default-blog.png' }}"
          alt="{{ article.title }}" class="article-banner">
 
     <div class="article-content">
         <div class="article-meta">
-            <span><i class="far fa-user"></i> نویسنده: {{ article.author.full_name if article.author else 'مدیریت رویال کیک' }}</span>
+            <span><i class="far fa-user"></i> نویسنده: ادمین</span>
             <span><i class="far fa-calendar-alt"></i> {{ article.created_at | jalali }}</span>
-            <span><i class="far fa-comments"></i> دیدگاه‌ها غیرفعال است</span>
         </div>
 
         <h1>{{ article.title }}</h1>
 
         <div class="article-text">
+            <!-- استفاده از فیلتر safe برای اینکه کدهای HTML ذخیره شده در دیتابیس به درستی رندر شوند -->
             {{ article.content | safe }}
         </div>
 
         <div class="comments-section">
             <h3>دیدگاه شما</h3>
-            <p style="font-size: 13px; color: #888; margin-bottom: 15px;">برای ثبت نظر و پرسش درباره این آموزش،
-                می‌توانید از طریق اپلیکیشن اختصاصی آکادمی اقدام کنید.</p>
-            <form class="comment-form" onsubmit="event.preventDefault();">
-                <textarea disabled placeholder="ثبت دیدگاه تنها از طریق اپلیکیشن موبایل امکان‌پذیر است..."></textarea>
-                <button type="button" style="background-color: #ccc; cursor: not-allowed;" class="btn-comment">قفل شده
-                </button>
+            <form class="comment-form"
+                  onsubmit="event.preventDefault(); alert('نظر شما با موفقیت ثبت شد و پس از تایید نمایش داده می‌شود.');">
+                <textarea placeholder="نظر یا سوال خود را درباره این مقاله بنویسید..." required></textarea>
+                <button type="submit" class="btn-comment">ثبت دیدگاه</button>
             </form>
         </div>
 

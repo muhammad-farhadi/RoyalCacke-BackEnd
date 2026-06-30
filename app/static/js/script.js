@@ -178,8 +178,8 @@ likeButtons.forEach(btn => {
 function filterGallery(category) {
     const buttons = document.querySelectorAll('.filter-btn');
     buttons.forEach(btn => btn.classList.remove('active'));
-    if (event && event.target) {
-        event.target.classList.add('active');
+    if (window.event && window.event.target) {
+        window.event.target.classList.add('active');
     }
 
     const items = document.querySelectorAll('.gallery-item');
@@ -229,5 +229,55 @@ function loadMoreImages() {
     const totalVisible = Array.from(galleryItems).filter(item => item.style.display === 'block').length;
     if (totalVisible >= galleryItems.length && loadMoreBtn) {
         loadMoreBtn.style.display = 'none';
+    }
+}
+
+
+// ================= سیستم هوشمند فرم تماس و پاپ‌آپ بدون تغییر صفحه =================
+function openContactModal() {
+    // ۱. دریافت مقادیر ورودی‌ها
+    const name = document.getElementById('contactName').value.trim();
+    const phone = document.getElementById('contactPhone').value.trim();
+    const message = document.getElementById('contactMessage').value.trim();
+    const formElement = document.getElementById('royalContactForm');
+
+    // ۲. بررسی خالی نبودن فیلدها
+    if (!name || !phone || !message) {
+        alert('لطفاً تمامی فیلدها را به درستی تکمیل کنید.');
+        return;
+    }
+
+    // ۳. تغییر حالت دکمه به لودینگ فرضی برای جذابیت بصری
+    const submitBtn = formElement.querySelector('.btn-submit-contact');
+    const originalBtnText = submitBtn.innerHTML;
+    submitBtn.innerHTML = 'در حال ارسال... <i class="fa-solid fa-spinner fa-spin"></i>';
+    submitBtn.disabled = true;
+
+    // ۴. باز کردن پاپ‌آپ روی همان صفحه بعد از یک مکث کوتاه نیم‌ثانیه‌ای
+    setTimeout(() => {
+        // اختصاصی کردن پیام داخل پاپ‌آپ با نام کاربر
+        const modalMessage = document.getElementById('modalUserMessage');
+        if (modalMessage) {
+            modalMessage.textContent = `${name} عزیز، پیام شما با موفقیت دریافت شد. به زودی با شما تماس می‌گیریم.`;
+        }
+
+        // افزودن کلاس show برای نمایش پاپ‌آپ شیشه‌ای
+        const modal = document.getElementById('contactModal');
+        if (modal) {
+            modal.classList.add('show');
+        }
+
+        // ریست فرم و بازگرداندن دکمه به حالت اولیه
+        formElement.reset();
+        submitBtn.innerHTML = originalBtnText;
+        submitBtn.disabled = false;
+    }, 600);
+}
+
+// تابع بستن پاپ‌آپ
+function closeContactModal() {
+    const modal = document.getElementById('contactModal');
+    if (modal) {
+        modal.classList.remove('show');
     }
 }
