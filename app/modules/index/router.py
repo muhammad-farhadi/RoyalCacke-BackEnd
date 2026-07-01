@@ -142,3 +142,43 @@ def render_login_page(request: Request):
         name="login-sigunp_page.html",
         context={}
     )
+
+
+@router.get("/admin", response_class=HTMLResponse)
+def render_admin_dashboard(request: Request, db: Session = Depends(get_db)):
+    """
+    رندر کردن داشبورد اصلی پنل مدیریت رویال کیک
+    """
+    # در فایل فرانت‌کار، آمارها هم به صورت فرانت‌اندی (با api.js) لود می‌شوند
+    # و هم ما می‌توانیم از سمت بک‌اند جی‌ان‌جی‌آیی بفرستیم.
+    # برای امنیت و سرعت، رندر اولیه صفحه را انجام می‌دهیم
+    return templates.TemplateResponse(
+        request=request,
+        name="panelmanagement.html",  # نام فایل اصلی داشبورد
+        context={}
+    )
+
+
+@router.get("/admin/courses", response_class=HTMLResponse)
+def render_admin_courses(request: Request):
+    return templates.TemplateResponse(request=request, name="courses.html", context={})
+
+
+@router.get("/admin/users", response_class=HTMLResponse)
+def render_admin_users(request: Request):
+    return templates.TemplateResponse(request=request, name="users.html", context={})
+
+
+@router.get("/admin/orders", response_class=HTMLResponse)
+def render_admin_orders(request: Request):
+    return templates.TemplateResponse(request=request, name="orders.html", context={})
+
+
+@router.get("/admin/gallery", response_class=HTMLResponse)
+def render_admin_gallery(request: Request):
+    return templates.TemplateResponse(request=request, name="gallery.html", context={})
+
+
+@router.get("/admin/articles", response_class=HTMLResponse)
+def render_admin_articles(request: Request):
+    return templates.TemplateResponse(request=request, name="articles.html", context={})

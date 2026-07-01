@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدیریت دوره‌ها - پنل مدیریت</title>
+    <link href="/static/css/tailwind.min.css" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'Samim';
+            src: url(/static/font/Samim-Bold.ttf);
+            font-weight: normal;
+        }
+
+        body {
+            font-family: 'Samim', sans-serif !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex h-screen overflow-hidden">
+<!-- سایدبار مدیریت -->
+<aside class="w-64 bg-gray-900 text-white flex flex-col justify-between hidden md:flex z-10 shadow-lg h-screen sticky top-0">
+    <div class="p-5">
+        <h1 class="text-xl font-bold border-b border-gray-700 pb-4 text-center text-green-400">پنل مدیریت رویال کیک</h1>
+        <nav class="mt-6 space-y-1">
+            <a href="/admin"
+               class="w-full flex items-center space-x-reverse space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 transition"><span>📊</span>
+                <span>داشبورد اصلی</span></a>
+            <a href="/admin/courses"
+               class="w-full flex items-center space-x-reverse space-x-3 px-4 py-3 rounded-lg bg-green-600 text-white transition"><span>🎓</span>
+                <span>دوره‌ها و دروس</span></a>
+            <a href="/admin/users"
+               class="w-full flex items-center space-x-reverse space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 transition"><span>👥</span>
+                <span>کاربران و دسترسی‌ها</span></a>
+            <a href="/admin/orders"
+               class="w-full flex items-center space-x-reverse space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 transition"><span>💳</span>
+                <span>سفارشات و مالی</span></a>
+            <a href="/admin/gallery"
+               class="w-full flex items-center space-x-reverse space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 transition"><span>🖼️</span>
+                <span>گالری تصاویر</span></a>
+            <a href="/admin/articles"
+               class="w-full flex items-center space-x-reverse space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 transition"><span>✍️</span>
+                <span>مدیریت مقالات</span></a>
+        </nav>
+    </div>
+    <div class="p-4 border-t border-gray-800 text-xs text-center text-gray-500">نسخه دیتابیس: Alembic v1.2</div>
+</aside>
+
+<main class="flex-1 flex flex-col overflow-y-auto">
+    <header class="bg-white shadow px-6 py-4 flex justify-between items-center">
+        <h2 class="text-xl text-gray-800">🎓 مدیریت دوره‌های آموزشی و دروس</h2>
+        <div class="flex items-center space-x-reverse space-x-3">
+            <button onclick="ApiService.logout()"
+                    class="h-10 px-4 bg-green-500 hover:bg-red-500 rounded-full text-white text-sm transition duration-300">
+                <span id="user-avatar-initial">مدیر سیستم</span></button>
+        </div>
+    </header>
+
+    <div class="p-6 space-y-6">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-700">لیست کل دوره‌های سیستم</h3>
+                <button onclick="openModal('course-modal')"
+                        class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition">
+                    افزودن دوره جدید
+                </button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-right border-collapse">
+                    <thead>
+                    <tr class="bg-gray-50 border-b text-gray-600 text-sm">
+                        <th class="p-3">کاور</th>
+                        <th class="p-3">عنوان دوره</th>
+                        <th class="p-3">قیمت</th>
+                        <th class="p-3">تعداد دروس</th>
+                        <th class="p-3 text-xs text-gray-500">طول دوره</th>
+                        <th class="p-3 text-center">عملیات</th>
+                    </tr>
+                    </thead>
+                    <tbody id="courses-tbody" class="text-sm text-gray-700 divide-y">
+                    <tr>
+                        <td colspan="6" class="p-6 text-center text-gray-400">در حال دریافت اطلاعات دوره‌ها...</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- بخش مدیریت دروس دوره انتخاب شده -->
+        <div id="lessons-section" class="bg-white rounded-xl shadow-md border border-gray-200 hidden overflow-hidden">
+            <div class="bg-gray-800 p-4 px-6 flex justify-between items-center text-white">
+                <h3 class="text-sm font-bold flex items-center gap-2">📖 لیست سرفصل‌ها و جلسات دوره: <span
+                        id="current-course-lessons-title" class="text-green-400 font-extrabold underline"></span></h3>
+                <button onclick="document.getElementById('lessons-section').classList.add('hidden')"
+                        class="text-gray-400 hover:text-white text-xl transition">&times;
+                </button>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6 bg-gray-50/50">
+                <form id="add-lesson-form" onsubmit="handleAddLesson(event)"
+                      class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-4">
+                    <h4 class="font-bold text-xs text-green-600 border-b border-gray-100 pb-2">➕ افزودن درس جدید به این
+                        دوره</h4>
+                    <div><label class="block text-xs text-gray-600 mb-1">عنوان درس *</label><input type="text"
+                                                                                                   id="l-title" required
+                                                                                                   class="w-full border rounded-lg p-2 text-sm">
+                    </div>
+                    <div><label class="block text-xs text-gray-600 mb-1">توضیحات کوتاه جلسه</label><input type="text"
+                                                                                                          id="l-description"
+                                                                                                          class="w-full border rounded-lg p-2 text-sm"
+                                                                                                          value="توضیحات مربوط به این جلسه">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div><label class="block text-xs text-gray-600 mb-1">مدت زمان (دقیقه) *</label><input
+                                type="number" id="l-duration" required class="w-full border rounded-lg p-2 text-sm">
+                        </div>
+                        <div><label class="block text-xs text-gray-600 mb-1">ترتیب نمایش *</label><input type="number"
+                                                                                                         id="l-sort"
+                                                                                                         required
+                                                                                                         class="w-full border rounded-lg p-2 text-sm"
+                                                                                                         value="1">
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-reverse space-x-2"><input type="checkbox" id="l-free"
+                                                                                    class="rounded w-4 h-4"><label
+                            for="l-free" class="text-xs text-gray-600">این جلسه رایگان باشد</label></div>
+                    <div><label class="block text-xs text-gray-600 mb-1">فایل ویدیویی جلسه *</label><input type="file"
+                                                                                                           id="l-video"
+                                                                                                           required
+                                                                                                           accept="video/*"
+                                                                                                           class="w-full text-xs border rounded-lg p-1">
+                    </div>
+                    <button type="submit"
+                            class="w-full bg-green-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-green-700 transition shadow-sm">
+                        شروع آپلود و ثبت درس
+                    </button>
+                </form>
+                <div class="lg:col-span-2 space-y-3 max-h-[550px] overflow-y-auto" id="lessons-cards-container"></div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- مودال ثبت دوره جدید -->
+<div id="course-modal"
+     class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+    <!-- ساختار فرم مودال فرانت کار شما عینا در اینجا قرار دارد -->
+</div>
+
+<script src="/static/js/api.js"></script>
+<script>
+        let currentCourseIdEditing = null;
+        let activeCourseIdForLessons = null;
+        const BASE_SERVER_URL = "https://royalcakes.ir";
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!localStorage.getItem('access_token')) {
+                window.location.href = '/login';
+                return;
+            }
+            const savedMobile = localStorage.getItem('user_mobile');
+            if (savedMobile) {
+                document.getElementById('user-avatar-initial').textContent = savedMobile;
+            }
+            loadAllCourses();
+        });
+
+        // ۱. دریافت و رندر دوره‌ها
+        async function loadAllCourses() {
+            const tbody = document.getElementById('courses-tbody');
+            if (!tbody) return;
+
+            try {
+                const courses = await ApiService.getCourses();
+                tbody.innerHTML = '';
+
+                if (!courses || courses.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-gray-400">هیچ دوره‌ای یافت نشد.</td></tr>`;
+                    return;
+                }
+
+                courses.forEach(course => {
+                    const priceFormatted = course.price === 0 ? 'رایگان' : parseInt(course.price).toLocaleString() + ' تومان';
+                    const lessonsCount = course.lessons ? course.lessons.length : 0;
+                    const fullImgUrl = course.image_url ? (course.image_url.startsWith('http') ? course.image_url : `${BASE_SERVER_URL}${course.image_url}`) : '/static/img/default-course.png';
+
+                    const row = document.createElement('tr');
+                    row.className = "hover:bg-gray-50 transition";
+                    row.innerHTML = `
+                        <td class="p-3">
+                            <img src="${fullImgUrl}" alt="cover" class="w-10 h-10 object-cover rounded-lg">
+                        </td>
+                        <td class="p-3 font-medium text-gray-800">${course.title}</td>
+                        <td class="p-3 text-gray-600">${priceFormatted}</td>
+                        <td class="p-3 text-gray-500">${lessonsCount} جلسه</td>
+                        <td class="p-3 text-xs text-gray-500">${course.total_hours || 0} ساعت</td>
+                        <td class="p-3 text-center space-x-reverse space-x-3">
+                            <button onclick="toggleLessonsSection(${course.id}, '${course.title}')" class="text-green-600 hover:text-green-800 text-xs font-medium transition">📚 مدیریت دروس</button>
+                            <button onclick="openEditModal(${course.id}, '${course.title}', ${course.price})" class="text-blue-600 hover:text-blue-800 text-xs font-medium transition">✏️ ویرایش</button>
+                            <button onclick="deleteCourseRequest(${course.id}, this)" class="text-rose-600 hover:text-rose-800 text-xs font-medium transition">🗑️ حذف</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error("Error fetching courses:", error);
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-rose-600 font-medium">خطا در بارگذاری اطلاعات دوره‌ها</td></tr>`;
+            }
+        }
+
+        // ۲. باز و بسته کردن مدال‌ها (دقیقاً عینا مطابق منطق فرانت‌کار شما با حذف و اضافه کردن hidden)
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        // ۳. مدیریت بخش دروس
+        async function toggleLessonsSection(courseId, courseName) {
+            const section = document.getElementById('lessons-section');
+            const titleSpan = document.getElementById('current-course-lessons-title');
+
+            if (section.classList.contains('hidden') || activeCourseIdForLessons !== courseId) {
+                section.classList.remove('hidden');
+                titleSpan.innerText = courseName;
+                activeCourseIdForLessons = courseId;
+                await loadLessonsForCourse(courseId);
+            } else {
+                section.classList.add('hidden');
+            }
+        }
+
+        async function loadLessonsForCourse(courseId) {
+            const container = document.getElementById('lessons-cards-container');
+            if (!container) return;
+
+            container.innerHTML = `<div class="p-4 text-center text-gray-400">در حال دریافت دروس...</div>`;
+
+            try {
+                const courseData = await ApiService.getCourseById(courseId);
+                container.innerHTML = '';
+
+                if (!courseData.lessons || courseData.lessons.length === 0) {
+                    container.innerHTML = `<div class="p-4 text-center text-gray-400 text-xs">هنوز هیچ درسی برای این دوره ثبت نشده است.</div>`;
+                    return;
+                }
+
+                courseData.lessons.forEach((lesson, index) => {
+                    const card = document.createElement('div');
+                    card.className = "bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between";
+                    card.innerHTML = `
+                        <div class="flex items-center space-x-reverse space-x-4">
+                            <div class="w-10 h-10 bg-gray-100 rounded-lg flex flex-col items-center justify-center font-bold text-gray-500 text-sm">
+                                <span class="text-[9px] text-gray-400 uppercase">-</span>${lesson.sort_order || (index + 1)}
+                            </div>
+                            <div>
+                                <h5 class="font-bold text-gray-800 text-sm">${lesson.title}</h5>
+                                <p class="text-xs text-gray-400 line-clamp-1">${lesson.description || ''}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-reverse space-x-4">
+                            <span class="bg-gray-100 text-gray-600 text-xs px-2.5 py-1 rounded-md">${lesson.duration} دقیقه</span>
+                            <button onclick="deleteLessonRequest(${lesson.id}, this)" class="text-red-500 hover:text-red-700">🗑️</button>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (error) {
+                container.innerHTML = `<div class="p-4 text-center text-rose-500 text-xs">خطا در دریافت دروس</div>`;
+            }
+        }
+
+        // ۴. ثبت دوره جدید
+        async function handleAddCourse(e) {
+            e.preventDefault();
+            const formData = new FormData();
+            formData.append('title', document.getElementById('c-title').value);
+            formData.append('description', document.getElementById('c-description').value);
+            formData.append('price', parseInt(document.getElementById('c-price').value));
+            formData.append('total_hours', parseInt(document.getElementById('c-hours').value));
+            formData.append('category', document.getElementById('c-category').value);
+            formData.append('level', document.getElementById('c-level').value);
+
+            const imageInput = document.getElementById('c-image');
+            if (imageInput.files.length > 0) formData.append('image_file', imageInput.files[0]);
+
+            try {
+                await ApiService.createCourse(formData);
+                alert('دوره با موفقیت ثبت شد.');
+                closeModal('course-modal');
+                document.getElementById('add-course-form').reset();
+                await loadAllCourses();
+            } catch (error) { alert('خطا در ذخیره دوره: ' + error.message); }
+        }
+
+        // ۵. ثبت درس جدید
+        async function handleAddLesson(e) {
+            e.preventDefault();
+            const formData = new FormData();
+            formData.append('course_id', activeCourseIdForLessons);
+            formData.append('title', document.getElementById('l-title').value);
+            formData.append('description', document.getElementById('l-description').value);
+            formData.append('duration', parseInt(document.getElementById('l-duration').value));
+            formData.append('sort_order', parseInt(document.getElementById('l-sort').value));
+            formData.append('is_free', document.getElementById('l-free').checked);
+
+            const videoInput = document.getElementById('l-video');
+            if (videoInput.files.length > 0) formData.append('video_file', videoInput.files[0]);
+
+            try {
+                await ApiService.createLesson(formData);
+                alert('درس با موفقیت آپلود و ثبت شد.');
+                document.getElementById('add-lesson-form').reset();
+                await loadLessonsForCourse(activeCourseIdForLessons);
+                await loadAllCourses();
+            } catch (error) { alert('خطا در آپلود: ' + error.message); }
+        }
+
+        // ۶. ویرایش و حذف
+        function openEditModal(id, title, price) {
+            currentCourseIdEditing = id;
+            document.getElementById('edit-c-title').value = title;
+            document.getElementById('edit-c-price').value = price;
+            openModal('edit-modal');
+        }
+
+        async function handleEditCourse(e) {
+            e.preventDefault();
+            try {
+                await ApiService.updateCourse(currentCourseIdEditing, {
+                    title: document.getElementById('edit-c-title').value,
+                    price: parseInt(document.getElementById('edit-c-price').value)
+                });
+                alert('تغییرات اعمال شد.');
+                closeModal('edit-modal');
+                await loadAllCourses();
+            } catch (error) { alert('خطا: ' + error.message); }
+        }
+
+        async function deleteCourseRequest(id, btn) {
+            if (!confirm('آیا از حذف این دوره مطمئن هستید؟')) return;
+            try {
+                await ApiService.deleteCourse(id);
+                btn.closest('tr').remove();
+                alert('دوره حذف شد.');
+            } catch (error) { alert('خطا: ' + error.message); }
+        }
+
+        async function deleteLessonRequest(lessonId, btn) {
+            if (!confirm('آیا از حذف درس مطمئن هستید؟')) return;
+            try {
+                await ApiService.deleteLesson(lessonId);
+                btn.closest('.bg-white').remove();
+                alert('درس حذف شد.');
+                await loadAllCourses();
+            } catch (error) { alert('خطا: ' + error.message); }
+        }
+    </script>
+</body>
+</html>

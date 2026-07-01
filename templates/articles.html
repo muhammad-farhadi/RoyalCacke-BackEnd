@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدیریت مقالات - پنل مدیریت رویال کیک</title>
+    <link href="/static/css/tailwind.min.css" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'Samim';
+            src: url(/static/font/Samim-Bold.ttf);
+            font-weight: normal;
+        }
+
+        body {
+            font-family: 'Samim', sans-serif !important;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 flex h-screen overflow-hidden">
+
+    <aside class="w-64 bg-gray-900 text-white flex flex-col justify-between hidden md:flex z-10 shadow-lg h-screen sticky top-0">
+        <div class="p-5">
+            <h1 class="text-xl font-bold border-b border-gray-700 pb-4 text-center text-green-400">پنل مدیریت رویال کیک</h1>
+            <nav class="mt-6 space-y-1">
+                <a href="panelmanagement.html" class="w-full flex items-center space-x-reverse space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 transition">
+                    <span>📊</span> <span>داشبورد اصلی</span>
+                </a>
+                <a href="courses.html" class="w-full flex items-center space-x-reverse space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 transition">
+                    <span>🎓</span> <span>دوره‌ها و دروس</span>
+                </a>
+                <a href="users.html" class="w-full flex items-center space-x-reverse space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 transition">
+                    <span>👥</span> <span>کاربران و دسترسی‌ها</span>
+                </a>
+                <a href="gallery.html" class="w-full flex items-center space-x-reverse space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 transition">
+                    <span>🖼️</span> <span>گالری تصاویر</span>
+                </a>
+                <a href="articles.html" class="w-full flex items-center space-x-reverse space-x-3 px-4 py-3 rounded-lg bg-green-600 text-white transition">
+                    <span>✍️</span> <span>مدیریت مقالات</span>
+                </a>
+            </nav>
+        </div>
+        <div class="p-4 border-t border-gray-800 text-xs text-center text-gray-500">نسخه دیتابیس: Alembic v1.2</div>
+    </aside>
+
+    <main class="flex-1 flex flex-col overflow-y-auto">
+        <header class="bg-white shadow px-6 py-4 flex justify-between items-center">
+            <h2 class="text-xl font-semibold text-gray-800">✍️ مدیریت مقالات و وبلاگ (Articles)</h2>
+            <button onclick="openModal('add')" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 transition">
+                + نوشتن مقاله جدید
+            </button>
+        </header>
+
+        <div class="p-6">
+            <div id="articles-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div id="articles-loading" class="col-span-full text-center py-12 text-gray-400">
+                    در حال بارگذاری مقالات وبلاگ رویال کیک...
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="article-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <h3 id="modal-title" class="font-bold text-lg border-b pb-2 text-gray-800">✍️ انتشار مقاله جدید در وبلاگ</h3>
+
+            <form id="article-form" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                <input type="hidden" id="a-id">
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">عنوان مقاله (title) *</label>
+                        <input type="text" id="a-title" required class="w-full border rounded-lg p-2 text-sm focus:outline-none focus:border-green-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">نامک انگلیسی یا یکتا (slug) *</label>
+                        <input type="text" id="a-slug" required class="w-full border rounded-lg p-2 text-sm focus:outline-none focus:border-green-500" placeholder="strawberry-cake-recipe">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">توضیحات سئو (meta_description) *</label>
+                    <input type="text" id="a-meta" required class="w-full border rounded-lg p-2 text-sm focus:outline-none focus:border-green-500" placeholder="یک خلاصه کوتاه جذاب برای موتورهای جستجو...">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">کلمات کلیدی / تگ‌ها (tags) *</label>
+                    <input type="text" id="a-tags" required class="w-full border rounded-lg p-2 text-sm focus:outline-none focus:border-green-500" placeholder="کیک, قنادی, رویال_کیک">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">انتخاب تصویر اصلی مقاله *</label>
+                    <input type="file" id="a-image" accept="image/*" class="w-full border rounded-lg p-1.5 text-sm focus:outline-none focus:border-green-500 bg-gray-50">
+                    <p id="edit-image-tip" class="text-xs text-amber-600 mt-1 hidden">نکته: در صورت عدم تمایل به تغییر عکس قبلی، این فیلد را خالی رها کنید.</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">متن اصلی و محتوای مقاله (content) *</label>
+                    <textarea id="a-content" required rows="6" class="w-full border rounded-lg p-2 text-sm focus:outline-none focus:border-green-500" placeholder="محتوای کامل متنی مقاله خود را اینجا وارد کنید..."></textarea>
+                </div>
+
+                <div class="flex justify-end space-x-reverse space-x-2 pt-4 border-t">
+                    <button type="button" onclick="closeModal()" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm transition hover:bg-gray-300">انصراف</button>
+                    <button type="submit" id="submit-btn" class="bg-green-600 text-white px-5 py-2 rounded-lg text-sm transition hover:bg-green-700">تایید و ذخیره‌سازی</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/js/api.js"></script>
+
+    <script>
+        const BASE_STATIC_URL = 'http://royalcakes.ir';
+        let currentMode = 'add';
+
+        document.addEventListener("DOMContentLoaded", () => {
+            if (!localStorage.getItem('access_token')) {
+                window.location.href = 'login-sigunp_page.html';
+                return;
+            }
+            fetchArticles();
+        });
+
+        // ۱. دریافت زنده مقالات از بک‌آند
+        async function fetchArticles() {
+            const grid = document.getElementById('articles-grid');
+            try {
+                const articles = await ApiService.getArticles();
+                grid.innerHTML = '';
+
+                if (!articles || articles.length === 0) {
+                    grid.innerHTML = `<div class="col-span-full text-center py-12 text-gray-400">هیچ مقاله‌ای در وبلاگ ثبت نشده است.</div>`;
+                    return;
+                }
+
+                articles.forEach(art => renderArticleCard(art));
+            } catch (error) {
+                console.error('Error fetching articles:', error);
+                grid.innerHTML = `<div class="col-span-full text-center py-12 text-rose-600 font-medium">خطا در دریافت لیست مقالات: ${error.message}</div>`;
+            }
+        }
+
+        // ۲. رندر کردن کارت‌های مقالات به همراه مدیریت خطای مقادیر null
+        function renderArticleCard(art) {
+            const grid = document.getElementById('articles-grid');
+            const card = document.createElement('div');
+            card.className = "bg-white border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between";
+
+            let fullImageUrl = 'https://placehold.co/600x400/f3f4f6/a1a1aa?text=No+Image';
+
+            if (art.image_url && typeof art.image_url === 'string') {
+                fullImageUrl = art.image_url.startsWith('http') ? art.image_url : `${BASE_STATIC_URL}${art.image_url}`;
+            }
+
+            // رمزگذاری امن کل آبجکت مقاله برای ارسال به تابع ویرایش بدون ریکوئست اضافه
+            const safeDataObject = encodeURIComponent(JSON.stringify(art));
+
+            card.innerHTML = `
+                <div>
+                    <div class="h-48 bg-gray-100 flex items-center justify-center overflow-hidden border-b">
+                        <img src="${fullImageUrl}" alt="${art.title || 'بدون عنوان'}" loading="lazy" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/600x400/f3f4f6/a1a1aa?text=Error+Loading'">
+                    </div>
+                    <div class="p-4 space-y-2">
+                        <span class="bg-green-50 text-green-700 text-[11px] px-2.5 py-1 rounded-full font-medium">شناسه نویسنده: ${art.author_id || 0}</span>
+                        <h4 class="font-bold text-base text-gray-800 truncate mt-1">${art.title || 'بدون عنوان'}</h4>
+                        <p class="text-xs text-gray-500 line-clamp-2">${art.meta_description || 'توضیحاتی ثبت نشده است.'}</p>
+                    </div>
+                </div>
+                <div class="p-3 bg-gray-50 border-t flex justify-between items-center">
+                    <button onclick="prepareEdit('${safeDataObject}')" class="text-blue-600 hover:text-blue-800 text-xs font-semibold transition">✏️ ویرایش متن</button>
+                    <button onclick="deleteArticle(${art.id}, this)" class="text-rose-600 hover:text-rose-800 text-xs font-semibold transition">🗑️ حذف مقاله</button>
+                </div>
+            `;
+            grid.appendChild(card);
+        }
+
+        // ۳. مدیریت بستن و باز کردن مدال
+        function openModal(mode) {
+            currentMode = mode;
+            const modal = document.getElementById('article-modal');
+            const title = document.getElementById('modal-title');
+            const fileInput = document.getElementById('a-image');
+            const tip = document.getElementById('edit-image-tip');
+
+            modal.classList.remove('hidden');
+
+            if (mode === 'add') {
+                title.innerText = '✍️ انتشار مقاله جدید در وبلاگ رویال کیک';
+                document.getElementById('article-form').reset();
+                fileInput.required = true;
+                tip.classList.add('hidden');
+            } else {
+                title.innerText = '✏️ ویرایش و تغییرات مقاله دیتابیس';
+                fileInput.required = false;
+                tip.classList.remove('hidden');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('article-modal').classList.add('hidden');
+        }
+
+        // ۴. هندل دوگانه فرم (ثبت جدید / به‌روزرسانی) با دیتای چندبخشی FormData
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+
+            const title = document.getElementById('a-title').value;
+            const slug = document.getElementById('a-slug').value;
+            const content = document.getElementById('a-content').value;
+            const metaDescription = document.getElementById('a-meta').value;
+            const tags = document.getElementById('a-tags').value;
+            const fileInput = document.getElementById('a-image');
+            const fileObject = fileInput.files[0] || null;
+
+            try {
+                if (currentMode === 'add') {
+                    await ApiService.createArticle(title, slug, content, metaDescription, tags, fileObject);
+                    alert('مقاله جدید با موفقیت روی سرور آپلود و منتشر شد.');
+                } else {
+                    const articleId = document.getElementById('a-id').value;
+                    await ApiService.updateArticle(articleId, title, slug, content, metaDescription, tags, fileObject);
+                    alert('تغییرات مقاله با موفقیت ذخیره شد.');
+                }
+
+                closeModal();
+                fetchArticles();
+            } catch (error) {
+                console.error('Error saving article:', error);
+                alert(`خطا در پردازش عملیات مقاله: ${error.message}`);
+            }
+        }
+
+        // ۵. آماده‌سازی سریع فیلدها جهت ویرایش مقاله بدون نیاز به وب‌سرویس مجدد (حل خطای 404)
+        function prepareEdit(encodedArtData) {
+            try {
+                const art = JSON.parse(decodeURIComponent(encodedArtData));
+
+                document.getElementById('a-id').value = art.id;
+                document.getElementById('a-title').value = art.title || '';
+                document.getElementById('a-slug').value = art.slug || '';
+                document.getElementById('a-content').value = art.content || '';
+                document.getElementById('a-meta').value = art.meta_description || '';
+                document.getElementById('a-tags').value = art.tags || '';
+
+                openModal('edit');
+            } catch (error) {
+                console.error('Error parsing article data:', error);
+                alert('خطا در بارگذاری اطلاعات مقاله روی فرم ویرایش.');
+            }
+        }
+
+        // ۶. حذف دائم مقاله
+        async function deleteArticle(id, btn) {
+            if (!confirm('آیا از حذف دائم و کامل این مقاله از روی سرور وبلاگ اطمینان دارید؟')) return;
+
+            try {
+                await ApiService.deleteArticle(id);
+                btn.closest('.bg-white').remove();
+                alert('مقاله انتخابی شما حذف گردید.');
+            } catch (error) {
+                console.error('Error deleting article:', error);
+                alert(`خطا در حذف مقاله: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+
+</html>

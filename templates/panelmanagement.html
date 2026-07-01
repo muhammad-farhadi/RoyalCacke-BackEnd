@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>داشبورد اصلی - پنل مدیریت</title>
+    <link href="/static/css/tailwind.min.css" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'Samim';
+            src: url(/static/font/Samim-Bold.ttf);
+            font-weight: normal;
+        }
+
+        body {
+            font-family: 'Samim', sans-serif !important;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 flex h-screen overflow-hidden">
+
+<aside
+        class="w-64 bg-gray-900 text-white flex flex-col justify-between hidden md:flex z-10 shadow-lg h-screen sticky top-0">
+    <div class="p-5">
+        <h1 class="text-xl font-bold border-b border-gray-700 pb-4 text-center text-green-400">پنل مدیریت رویال کیک
+        </h1>
+        <nav class="mt-6 space-y-1">
+            <a href="panelmanagement.html"
+               class="w-full flex items-center space-x-reverse space-x-3 px-4 py-3 rounded-lg bg-green-600 text-white transition">
+                <span>📊</span> <span>داشبورد اصلی</span>
+            </a>
+            <a href="courses.html"
+               class="w-full flex items-center space-x-reverse space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 transition">
+                <span>🎓</span> <span>دوره‌ها و دروس</span>
+            </a>
+            <a href="users.html"
+               class="w-full flex items-center space-x-reverse space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 transition">
+                <span>👥</span> <span>کاربران و دسترسی‌ها</span>
+            </a>
+            <a href="orders.html"
+               class="w-full flex items-center space-x-reverse space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 transition">
+                <span>💳</span> <span>سفارشات و مالی</span>
+            </a>
+            <a href="gallery.html"
+               class="w-full flex items-center space-x-reverse space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 transition">
+                <span>🖼️</span> <span>گالری تصاویر</span>
+            </a>
+            <a href="articles.html"
+               class="w-full flex items-center space-x-reverse space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 transition">
+                <span>✍️</span> <span>مدیریت مقالات</span>
+            </a>
+        </nav>
+    </div>
+    <div class="p-4 border-t border-gray-800 text-xs text-center text-gray-500">نسخه دیتابیس: Alembic v1.2</div>
+</aside>
+
+<main class="flex-1 flex flex-col overflow-y-auto">
+
+    <header class="bg-white shadow px-6 py-4 flex justify-between items-center">
+        <h2 class="text-xl text-gray-800">📊 داشبورد اصلی آمار</h2>
+
+        <div class="flex items-center space-x-reverse space-x-3">
+            <div class="text-right">
+                <span class="text-xs text-gray-400 block mb-0.5">مدیر متصل شده:</span>
+            </div>
+            <button onclick="ApiService.logout()" title="خروج از حساب"
+                    class="h-10 px-4 bg-green-500 hover:bg-red-500 rounded-full flex items-center justify-center text-white text-sm transition duration-300 tracking-wider"
+                    style="direction: ltr;">
+                <span id="user-avatar-initial">09xxxxxxxxx</span>
+            </button>
+        </div>
+    </header>
+
+    <div class="p-6 space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm">کل کاربران</p>
+                    <h3 id="total-users-count" class="text-2xl font-bold text-gray-800 mt-1">... نفر</h3>
+                </div>
+                <span class="text-3xl bg-blue-100 text-blue-600 p-3 rounded-lg">👥</span>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm">دوره‌های فعال</p>
+                    <h3 id="total-courses-count" class="text-2xl font-bold text-gray-800 mt-1">... دوره</h3>
+                </div>
+                <span class="text-3xl bg-green-100 text-green-600 p-3 rounded-lg">🎓</span>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm">مجموع فروش و درآمد</p>
+                    <h3 id="total-earnings" class="text-2xl font-bold text-emerald-600 mt-1">... تومان</h3>
+                </div>
+                <span class="text-3xl bg-emerald-100 text-emerald-600 p-3 rounded-lg">💰</span>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm">تعداد دوره‌های فروخته شده</p>
+                    <h3 id="total-sales-count" class="text-2xl font-bold text-purple-800 mt-1">... سفارش</h3>
+                </div>
+                <span class="text-3xl bg-purple-100 text-purple-600 p-3 rounded-lg">💳</span>
+            </div>
+
+        </div>
+    </div>
+</main>
+
+<script src="/static/js/api.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        // ۱. بررسی امنیتی توکن
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+            window.location.href = 'login-sigunp_page.html';
+            return;
+        }
+
+        // ۲. قرار دادن شماره موبایل کامل در هدر
+        const savedMobile = localStorage.getItem('user_mobile');
+        if (savedMobile && savedMobile.trim() !== "") {
+            document.getElementById('user-avatar-initial').textContent = savedMobile;
+        } else {
+            document.getElementById('user-avatar-initial').textContent = 'مدیر سیستم';
+        }
+
+        // ۳. دریافت همزمان آمار کاربران، دوره‌ها و سفارشات از سرور
+        try {
+            // فرض شده متد ApiService.getOrders() برای دریافت لیست مالی وجود دارد
+            const [usersList, coursesList, ordersList] = await Promise.all([
+                ApiService.getUsers(0, 50).catch(err => {
+                    console.error(err);
+                    return null;
+                }),
+                ApiService.getCourses().catch(err => {
+                    console.error(err);
+                    return null;
+                }),
+                ApiService.getOrders().catch(err => {
+                    console.error(err);
+                    return null;
+                }) // درخواست بخش سفارشات
+            ]);
+
+            // اعمال آمار کاربران
+            if (Array.isArray(usersList)) {
+                document.getElementById('total-users-count').textContent = `${usersList.length} نفر`;
+            } else {
+                document.getElementById('total-users-count').textContent = "خطا در لود";
+            }
+
+            // اعمال آمار دوره‌ها
+            if (Array.isArray(coursesList)) {
+                document.getElementById('total-courses-count').textContent = `${coursesList.length} دوره`;
+            } else {
+                document.getElementById('total-courses-count').textContent = "خطا در لود";
+            }
+
+            // پردازش اطلاعات مالی و سفارشات
+            if (Array.isArray(ordersList)) {
+                // فقط سفارشاتی که وضعیت پرداخت آن‌ها موفق (مثلاً 'paid' یا 'success') است محاسبه شوند
+                const successfulOrders = ordersList.filter(order => order.status === 'paid' || order.status === 'success' || order.is_paid === true);
+
+                // محاسبه مجموع مبالغ تراکنش‌ها
+                const totalIncome = successfulOrders.reduce((sum, order) => sum + (Number(order.price) || Number(order.amount) || 0), 0);
+
+                // فرمت‌دهی عدد به صورت ۳ رقم ۳ رقم برای نمایش شیک مالی
+                document.getElementById('total-earnings').textContent = `${totalIncome.toLocaleString('fa-IR')} تومان`;
+                document.getElementById('total-sales-count').textContent = `${successfulOrders.length} ثبت‌نام`;
+            } else {
+                document.getElementById('total-earnings').textContent = "خطا در لود";
+                document.getElementById('total-sales-count').textContent = "خطا در لود";
+            }
+
+        } catch (error) {
+            console.error("خطای کلی در بارگذاری آمار داشبورد:", error);
+        }
+    });
+</script>
+</body>
+
+</html>

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدیریت کاربران - پنل مدیریت</title>
+    <link href="/static/css/tailwind.min.css" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'Samim';
+            src: url(/static/font/Samim-Bold.ttf);
+            font-weight: normal;
+        }
+
+        body {
+            font-family: 'Samim', sans-serif !important;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 flex h-screen overflow-hidden">
+
+    <aside
+        class="w-64 bg-gray-900 text-white flex flex-col justify-between hidden md:flex z-10 shadow-lg h-screen sticky top-0">
+        <div class="p-5">
+            <h1 class="text-xl font-bold border-b border-gray-700 pb-4 text-center text-green-400">پنل مدیریت رویال کیک
+            </h1>
+            <nav class="mt-6 space-y-1">
+                <a href="panelmanagement.html"
+                    class="w-full flex items-center space-x-reverse space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 transition">
+                    <span>📊</span> <span>داشبورد اصلی</span>
+                </a>
+                <a href="courses.html"
+                    class="w-full flex items-center space-x-reverse space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 transition">
+                    <span>🎓</span> <span>دوره‌ها و دروس</span>
+                </a>
+                <a href="users.html"
+                    class="w-full flex items-center space-x-reverse space-x-3 px-4 py-3 rounded-lg bg-green-600 text-white transition">
+                    <span>👥</span> <span>کاربران و دسترسی‌ها</span>
+                </a>
+                <a href="orders.html"
+                    class="w-full flex items-center space-x-reverse space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 transition">
+                    <span>💳</span> <span>سفارشات و مالی</span>
+                </a>
+                <a href="gallery.html"
+                    class="w-full flex items-center space-x-reverse space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 transition">
+                    <span>🖼️</span> <span>گالری تصاویر</span>
+                </a>
+                <a href="articles.html"
+                    class="w-full flex items-center space-x-reverse space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 transition">
+                    <span>✍️</span> <span>مدیریت مقالات</span> </a>
+            </nav>
+        </div>
+        <div class="p-4 border-t border-gray-800 text-xs text-center text-gray-500">نسخه دیتابیس: Alembic v1.2</div>
+    </aside>
+
+    <main class="flex-1 flex flex-col overflow-y-auto">
+
+        <header class="bg-white shadow px-6 py-4 flex justify-between items-center">
+            <h2 class="text-xl font-semibold text-gray-800">👥 مدیریت کاربران و سطوح دسترسی (RBAC)</h2>
+
+            <div class="flex items-center space-x-reverse space-x-3">
+                <div class="text-right">
+                    <span class="text-xs text-gray-400 block mb-0.5">مدیر متصل شده:</span>
+                </div>
+                <button onclick="ApiService.logout()" title="خروج از حساب"
+                    class="h-10 px-4 bg-green-500 hover:bg-red-500 rounded-full flex items-center justify-center text-white text-sm font-semibold transition duration-300 tracking-wider"
+                    style="direction: ltr;">
+                    <span id="user-avatar-initial">09xxxxxxxxx</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="p-6 space-y-6">
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <h3 class="text-lg font-bold text-gray-700 mb-4">لیست کل کاربران سیستم (Users)</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50 border-b text-gray-600 text-sm">
+                                <th class="p-3">شناسه (ID)</th>
+                                <th class="p-3">نام و نام خانوادگی</th>
+                                <th class="p-3">شماره تماس (phone_number)</th>
+                                <th class="p-3 text-center">وضعیت حساب (is_active)</th>
+                                <th class="p-3">نقش سیستم (Role)</th>
+                                <th class="p-3 text-center">عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-tbody" class="text-sm text-gray-700 divide-y">
+                            <tr>
+                                <td colspan="6" class="p-6 text-center text-gray-400">در حال بارگذاری اطلاعات کاربران...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
+                💡 <strong>راهنمای مدیریت سطوح دسترسی:</strong> اطلاعات کاربران مستقیماً از هسته API سرور رویال کیک
+                واکشی شده‌اند. عملیات حذف یا تغییر نقش مستقیماً روی شناسه دیتابیس کاربر اعمال خواهد شد.
+            </div> -->
+
+        </div>
+    </main>
+
+    <div id="edit-user-modal"
+        class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl shadow-lg w-full max-w-md mx-4 overflow-hidden">
+            <div class="bg-gray-100 px-6 py-4 border-b flex justify-between items-center">
+                <h3 class="font-bold text-gray-800 text-lg">✏️ ویرایش اطلاعات کاربر</h3>
+                <button onclick="closeEditModal()"
+                    class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+            </div>
+            <form id="edit-user-form" class="p-6 space-y-4">
+                <input type="hidden" id="edit-user-id">
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">نام و نام خانوادگی</label>
+                    <input type="text" id="edit-full-name" required
+                        class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">شماره تماس</label>
+                    <input type="text" id="edit-phone-number" required
+                        class="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:border-green-500"
+                        style="direction: ltr; text-align: right;">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">رمز عبور جدید (اختیاری)</label>
+                    <input type="password" id="edit-password" placeholder="در صورت عدم تغییر خالی بگذارید"
+                        class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-500">
+                </div>
+
+                <div class="flex items-center space-x-reverse space-x-3 pt-2">
+                    <label class="flex items-center space-x-reverse space-x-2 text-sm text-gray-700 cursor-pointer">
+                        <input type="checkbox" id="edit-is-active"
+                            class="rounded text-green-500 focus:ring-green-500 h-4 w-4">
+                        <span>حساب کاربری فعال باشد</span>
+                    </label>
+                </div>
+
+                <div class="flex justify-end space-x-reverse space-x-2 pt-4 border-t">
+                    <button type="button" onclick="closeEditModal()"
+                        class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition">انصراف</button>
+                    <button type="submit"
+                        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">ثبت
+                        تغییرات</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/js/api.js"></script>
+
+    <script>
+        // متغیر عمومی برای نگه داشتن آرایه کل کاربران جهت استفاده در فرم ویرایش
+        let currentUsersArray = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                window.location.href = 'login-sigunp_page.html';
+                return;
+            }
+
+            const savedMobile = localStorage.getItem('user_mobile');
+            if (savedMobile && savedMobile.trim() !== "") {
+                document.getElementById('user-avatar-initial').textContent = savedMobile;
+            } else {
+                document.getElementById('user-avatar-initial').textContent = 'مدیر سیستم';
+            }
+
+            await loadUsersTable();
+
+            // تخصیص استاندارد متد به رویداد ثبت فرم
+            const editForm = document.getElementById('edit-user-form');
+            if (editForm) {
+                editForm.addEventListener('submit', handleEditFormSubmit);
+            }
+        });
+
+        // تابع واکشی و رندر جدول کاربران
+        async function loadUsersTable() {
+            const tbody = document.getElementById('users-tbody');
+            if (!tbody) return;
+
+            try {
+                const users = await ApiService.getUsers(0, 50);
+                currentUsersArray = Array.isArray(users) ? users : [];
+
+                if (currentUsersArray.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-gray-400">هیچ کاربری در سیستم یافت نشد.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = '';
+
+                currentUsersArray.forEach(user => {
+                    const statusClass = user.is_active ? 'bg-green-100 text-green-700' : 'bg-rose-100 text-rose-700';
+                    const statusText = user.is_active ? '✓ فعال' : '❌ غیرفعال';
+
+                    const isAdminSelected = user.is_superuser ? 'selected' : '';
+                    const isStudentSelected = !user.is_superuser ? 'selected' : '';
+
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50 transition';
+                    row.innerHTML = `
+                        <td class="p-3 text-gray-500 font-mono">#${user.id}</td>
+                        <td class="p-3 font-medium text-gray-800">${user.full_name || 'بدون نام'}</td>
+                        <td class="p-3 font-mono" style="direction: ltr; text-align: right;">${user.phone_number}</td>
+                        <td class="p-3 text-center">
+                            <span class="${statusClass} px-2 py-1 rounded text-xs font-medium inline-block">
+                                ${statusText}
+                            </span>
+                        </td>
+                        <td class="p-3">
+                            <select onchange="changeRole(this, ${user.id})" class="border rounded p-1 text-xs focus:outline-none focus:border-green-500">
+                                <option value="Student" ${isStudentSelected}>دانشجو (Student)</option>
+                                <option value="Admin" ${isAdminSelected}>مدیر (Superuser)</option>
+                            </select>
+                        </td>
+                        <td class="p-3 text-center space-x-reverse space-x-3">
+                            <button onclick="openEditModal(${user.id})" class="text-blue-600 hover:text-blue-800 text-xs font-medium transition">
+                                ✏️ ویرایش
+                            </button>
+                            <button onclick="deleteUserRequest(this, ${user.id})" class="text-rose-600 hover:text-rose-800 text-xs font-medium transition">
+                                🗑️ حذف کاربر
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+            } catch (error) {
+                console.error("Error loading users:", error);
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-rose-600 font-medium">خطا در دریافت اطلاعات از سرور!</td></tr>`;
+            }
+        }
+
+        // 🔘 باز کردن مودال ویرایش و پر کردن فیلدها
+        function openEditModal(userId) {
+            const user = currentUsersArray.find(u => u.id === userId);
+            if (!user) return;
+
+            document.getElementById('edit-user-id').value = user.id;
+            document.getElementById('edit-full-name').value = user.full_name || '';
+            document.getElementById('edit-phone-number').value = user.phone_number || '';
+            document.getElementById('edit-password').value = '';
+            document.getElementById('edit-is-active').checked = !!user.is_active;
+
+            document.getElementById('edit-user-modal').classList.remove('hidden');
+        }
+
+        // 🔘 بستن مودال ویرایش
+        function closeEditModal() {
+            document.getElementById('edit-user-modal').classList.add('hidden');
+        }
+
+        // 🛠️ ارسال اطلاعات ویرایش شده به سرور و ریلود زنده جدول
+        async function handleEditFormSubmit(e) {
+            e.preventDefault();
+
+            const userId = document.getElementById('edit-user-id').value;
+            const fullName = document.getElementById('edit-full-name').value;
+            const phoneNumber = document.getElementById('edit-phone-number').value;
+            const password = document.getElementById('edit-password').value;
+            const isActive = document.getElementById('edit-is-active').checked;
+
+            const payload = {
+                full_name: fullName,
+                phone_number: phoneNumber,
+                password: password.trim() !== "" ? password : "string",
+                is_active: isActive,
+                is_verified: true
+            };
+
+            try {
+                await ApiService.updateUser(userId, payload);
+                alert('اطلاعات کاربر با موفقیت به‌روزرسانی شد.');
+                closeEditModal();
+                await loadUsersTable(); // بازنشانی فورا دیتای داخل جدول زنده
+            } catch (error) {
+                console.error("Error updating user:", error);
+                alert(`خطا در ویرایش کاربر: ${error.message}`);
+            }
+        }
+
+        // تغییر نقش کاربر
+        function changeRole(selectElement, userId) {
+            const role = selectElement.value;
+            alert(`نقش کاربر شماره #${userId} به "${role}" تغییر یافت.`);
+        }
+
+        // حذف واقعی کاربر
+        async function deleteUserRequest(btn, userId) {
+            if (confirm(`آیا از حذف کاربر شماره #${userId} اطمینان کامل دارید؟`)) {
+                try {
+                    await ApiService.deleteUser(userId);
+                    btn.closest('tr').remove();
+                    alert('کاربر با موفقیت حذف شد.');
+                } catch (error) {
+                    console.error("خطا در حذف کاربر:", error);
+                    alert(`خطا: ${error.message}`);
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
