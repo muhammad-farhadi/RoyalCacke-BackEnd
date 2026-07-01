@@ -13,7 +13,7 @@
 <header class="navbar">
     <div class="logo">
         <div class="logo-img">
-            <img class="logo-img" src="/static/img/logo.png">
+            <img class="logo-img" src="/static/img/logo.webp">
         </div>
         <div class="logo-txt">
             <h2>رویال <span>کیک</span></h2>
@@ -31,7 +31,7 @@
     <nav class="nav-elements">
         <ul class="nav-links">
             <li><a href="/">صفحه نخست</a></li>
-            <li><a href="/courses" class="active">دوره‌ها</a></li>
+            <li><a href="/course" class="active">دوره‌ها</a></li>
             <li><a href="/blog">بلاگ‌ها</a></li>
             <li><a href="/#about-container">درباره رویال کیک</a></li>
             <li><a href="/#contact-container">تماس با ما</a></li>
@@ -62,14 +62,14 @@
                     <span><i class="fa-solid fa-signal"></i> {{ course.level }}</span>
                 </div>
                 <div class="course-footer">
-                    <div class="price">
+                    <!-- <div class="price">
                         {% if course.price == 0 %}
                         <span class="amount text-green-600">رایگان</span>
                         {% else %}
                         <span class="amount">{{ "{:,}".format(course.price) }}</span> تومان
                         {% endif %}
-                    </div>
-                    <a href="/courses/{{ course.id }}" class="btn-course">مشاهده دوره</a>
+                    </div> -->
+                    <a href="/course/{{ course.id }}" class="btn-course">مشاهده دوره</a>
                 </div>
             </div>
         </div>
@@ -97,7 +97,7 @@
             </ul>
         </div>
         <div class="footer-column newsletter-col">
-            <img src="/static/img/enamad.png">
+             <a referrerpolicy='origin' target='_blank' href='https://trustseal.enamad.ir/?id=746922&Code=y8vN3FxuNqaZm6iLRu4K3DMlMDySi3HI'><img referrerpolicy='origin' src='https://trustseal.enamad.ir/logo.aspx?id=746922&Code=y8vN3FxuNqaZm6iLRu4K3DMlMDySi3HI' alt='' style='cursor:pointer' code='y8vN3FxuNqaZm6iLRu4K3DMlMDySi3HI'></a>
         </div>
     </div>
     <div class="footer-bottom">

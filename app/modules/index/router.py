@@ -92,7 +92,7 @@ def handle_contact_submit(
     return {"success": True, "message": "پیام شما با موفقیت ثبت شد."}
 
 
-@router.get("/courses", response_class=HTMLResponse)
+@router.get("/course", response_class=HTMLResponse)
 def render_courses_page(request: Request, db: Session = Depends(get_db)):
     """
     رندر کردن صفحه لیست تمامی دوره‌های آموزشی برای کاربران (فرانت‌اند)
@@ -109,7 +109,7 @@ def render_courses_page(request: Request, db: Session = Depends(get_db)):
     )
 
 
-@router.get("/courses/{course_id}", response_class=HTMLResponse)
+@router.get("/course/{course_id}", response_class=HTMLResponse)
 def render_single_course(request: Request, course_id: int, db: Session = Depends(get_db)):
     """
     رندر کردن صفحه داخلی یک دوره خاص (اگر قالبی برای آن دارید)
@@ -182,3 +182,5 @@ def render_admin_gallery(request: Request):
 @router.get("/admin/articles", response_class=HTMLResponse)
 def render_admin_articles(request: Request):
     return templates.TemplateResponse(request=request, name="articles.html", context={})
+
+

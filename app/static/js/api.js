@@ -27,17 +27,17 @@ const ApiService = {
     // ==========================================
     async request(endpoint, options = {}) {
         const url = `${API_BASE}${endpoint}`;
-        
+
         // ایجاد یک کپی عمیق از هدرها برای جلوگیری از تداخل در درخواست‌های مجدد
         options.headers = { ...options.headers };
-        
+
         // تشخیص خودکار هدر برای ارسال اطلاعات متنی یا فایل
         if (options.body && !(options.body instanceof FormData)) {
             options.headers['Content-Type'] = 'application/json';
         }
-        
+
         options.headers['accept'] = 'application/json';
-        
+
         // تزریق خودکار اکسس توکن به درخواست‌ها
         const token = localStorage.getItem('access_token');
         if (token) {
@@ -50,17 +50,17 @@ const ApiService = {
             // 🔴 اگر توکن منقضی شده بود (خطای 401)
             if (response.status === 401 && !this.isRefreshing) {
                 console.warn(`Token expired for ${endpoint}. Attempting to refresh...`);
-                
+
                 // تلاش برای گرفتن اکسس توکن جدید با استفاده از رفرش توکن
                 const refreshed = await this.refreshToken();
-                
+
                 if (refreshed) {
                     // دریافت توکن جدیدِ ذخیره شده
                     const newToken = localStorage.getItem('access_token');
-                    
+
                     // هدر درخواست قبلی را کاملاً پاکسازی و با توکن جدید به‌روزرسانی می‌کنیم
                     options.headers['Authorization'] = `Bearer ${newToken}`;
-                    
+
                     // درخواست را مجدداً تکرار می‌کنیم و خروجی را برمی‌گردانیم
                     return await this.request(endpoint, options);
                 } else {
@@ -88,7 +88,7 @@ const ApiService = {
     // ==========================================
     // ۱. سرویس‌های احراز هویت و مدیریت کاربران
     // ==========================================
-    
+
     // متد ورود (Form URL Encoded)
     async login(mobile, password) {
         const params = new URLSearchParams();
@@ -114,7 +114,7 @@ const ApiService = {
         }
 
         const data = await response.json();
-        
+
         // ذخیره هر دو توکن دریافتی از بک‌اَند
         if (data.access_token && data.refresh_token) {
             localStorage.setItem('access_token', data.access_token);
@@ -142,13 +142,13 @@ const ApiService = {
             if (!response.ok) throw new Error('Refresh token expired');
 
             const data = await response.json();
-            
+
             // جایگذاری توکن‌های جدیدِ تمدید شده در مرورگر
             if (data.access_token && data.refresh_token) {
                 localStorage.setItem('access_token', data.access_token);
                 localStorage.setItem('refresh_token', data.refresh_token);
             }
-            
+
             console.log('Tokens refreshed successfully in background.');
             this.isRefreshing = false;
             return true;
@@ -160,14 +160,24 @@ const ApiService = {
     },
 
     // خروج از حساب کاربری
-    logout() {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('user_mobile');
-        _apiCache.clear(); // پاکسازی کامل حافظه کش در هنگام خروج ادمین
-        alert('جلسه کاری شما پایان یافته است. لطفاً مجدداً وارد شوید.');
-        window.location.href = 'login-sigunp_page.html';
-    },
+logout() {
+    // نمایش باکس سوال و دریافت پاسخ کاربر
+    const confirmLogout = confirm('آیا مطمئن هستید که می‌خواهید از حساب خود خارج شوید؟');
+    
+    // اگر کاربر لغو (Cancel) را زد، بقیه کد اجرا نشود و خارج شود
+    if (!confirmLogout) {
+        return;
+    }
+
+    // اگر تایید کرد، کدهای خروج اجرا می‌شوند:
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user_mobile');
+    _apiCache.clear(); // پاکسازی کامل حافظه کش در هنگام خروج ادمین
+    
+    alert('جلسه کاری شما پایان یافته است. لطفاً مجدداً وارد شوید.');
+    window.location.href = '/login';
+},
 
     // دریافت لیست کاربران (با فیلتر تعداد و لودینگ هوشمند)
     async getUsers(skip = 0, limit = 50) {
@@ -262,7 +272,7 @@ const ApiService = {
     async createCourse(formDataObject) {
         const result = await this.request('/courses/', {
             method: 'POST',
-            body: formDataObject 
+            body: formDataObject
         });
         _apiCache.delete('courses_list');
         return result;
@@ -291,8 +301,8 @@ const ApiService = {
     },
 
     async deleteLesson(lessonId) {
-        return this.request(`/lessons/${lessonId}`, { 
-            method: 'DELETE' 
+        return this.request(`/lessons/${lessonId}`, {
+            method: 'DELETE'
         });
     },
 
@@ -317,7 +327,7 @@ const ApiService = {
     // ==========================================
     // ۵. سرویس‌های مدیریت مقالات و وبلاگ (Articles)
     // ==========================================
-    
+
     // دریافت تمامی مقالات (مجهز به سیستم سرعت‌دهنده لایتنینگ کَش)
     async getArticles(skip = 0, limit = 50) {
         const cacheKey = `articles_${skip}_${limit}`;
@@ -358,7 +368,7 @@ const ApiService = {
         formData.append('content', content);
         formData.append('meta_description', metaDescription);
         formData.append('tags', tags);
-        
+
         if (fileObject) {
             formData.append('image', fileObject);
         }
@@ -381,11 +391,11 @@ const ApiService = {
         formData.append('content', content);
         formData.append('meta_description', metaDescription);
         formData.append('tags', tags);
-        
+
         if (fileObject) {
             formData.append('image', fileObject);
         } else {
-            formData.append('image', ''); 
+            formData.append('image', '');
         }
 
         const result = await this.request(`/articles/${articleId}`, {
