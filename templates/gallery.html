@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدیریت گالری - پنل مدیریت</title>
+    <link href="/static/css/tailwind.min.css" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'Samim';
+            src: url(/static/font/Samim-Bold.ttf);
+            font-weight: normal;
+        }
+
+        body {
+            font-family: 'Samim', sans-serif !important;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 flex h-screen overflow-hidden">
+
+    <aside
+        class="w-64 bg-gray-900 text-white flex flex-col justify-between hidden md:flex z-10 shadow-lg h-screen sticky top-0">
+        <div class="p-5">
+            <h1 class="text-xl font-bold border-b border-gray-700 pb-4 text-center text-green-400">پنل مدیریت رویال کیک
+            </h1>
+            <nav class="mt-6 space-y-1">
+                <a href="/admin"
+                    class="w-full flex items-center space-x-reverse space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 transition"><span>📊</span>
+                    <span>داشبورد اصلی</span></a>
+                <a href="/admin/courses"
+                    class="w-full flex items-center space-x-reverse space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 transition"><span>🎓</span>
+                    <span>دوره‌ها و دروس</span></a>
+                <a href="/admin/users"
+                    class="w-full flex items-center space-x-reverse space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 transition"><span>👥</span>
+                    <span>کاربران و دسترسی‌ها</span></a>
+                <a href="/admin/orders"
+                    class="w-full flex items-center space-x-reverse space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 transition"><span>💳</span>
+                    <span>سفارشات و مالی</span></a>
+                <a href="/admin/gallery"
+                    class="w-full flex items-center space-x-reverse space-x-3 px-4 py-3 rounded-lg  bg-green-600 text-white text-gray-300 hover:bg-gray-800 transition"><span>🖼️</span>
+                    <span>گالری تصاویر</span></a>
+                <a href="/admin/articles"
+                    class="w-full flex items-center space-x-reverse space-x-3  px-4 py-3 rounded-lg   text-gray-300 hover:bg-gray-800 transition"><span>✍️</span>
+                    <span>مدیریت مقالات</span></a>
+            </nav>
+        </div>
+        <div class="p-4 border-t border-gray-800 text-xs text-center text-gray-500">نسخه دیتابیس: Alembic v1.2</div>
+    </aside>
+
+    <main class="flex-1 flex flex-col overflow-y-auto">
+        <header class="bg-white shadow px-6 py-4 flex justify-between items-center">
+            <h2 class="text-xl font-semibold text-gray-800">🖼️ مدیریت گالری تصاویر (Galleries)</h2>
+            <button onclick="openModal()"
+                class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 transition">
+                + آپلود تصویر جدید
+            </button>
+        </header>
+
+        <div class="p-6">
+            <div id="gallery-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <div id="gallery-loading" class="col-span-full text-center py-12 text-gray-400">
+                    در حال بارگذاری تصاویر گالری...
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="gallery-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
+            <h3 class="font-bold text-lg border-b pb-2 text-gray-800">🖼️ آپلود فایل در سرور گالری رویال کیک</h3>
+            <form id="add-image-form" onsubmit="handleAddImage(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">عنوان تصویر (title) *</label>
+                    <input type="text" id="g-title" required
+                        class="w-full border rounded-lg p-2 text-sm focus:outline-none focus:border-green-500"
+                        placeholder="مثال: کیک خامه ای توت فرنگی">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">متن جایگزین (alt_text) *</label>
+                    <input type="text" id="g-alt" required
+                        class="w-full border rounded-lg p-2 text-sm focus:outline-none focus:border-green-500"
+                        placeholder="مثال: تصویر sweet3 از دسته pastry">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">دسته‌بندی تصویر (category) *</label>
+                    <select id="g-category"
+                        class="w-full border rounded-lg p-2 text-sm focus:outline-none focus:border-green-500">
+                        <option value="cake">کیک (Cake)</option>
+                        <option value="pastry">شیرینی (Pastry)</option>
+                        <option value="gallery">عمومی (Gallery)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">انتخاب فایل فایل عکس *</label>
+                    <input type="file" id="g-file" required accept="image/*"
+                        class="w-full border rounded-lg p-1.5 text-sm focus:outline-none focus:border-green-500 bg-gray-50">
+                </div>
+                <div class="flex justify-end space-x-reverse space-x-2 pt-4 border-t">
+                    <button type="button" onclick="closeModal()"
+                        class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm transition hover:bg-gray-300">انصراف</button>
+                    <button type="submit"
+                        class="bg-green-600 text-white px-5 py-2 rounded-lg text-sm transition hover:bg-green-700">شروع
+                        فرآیند آپلود</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/js/api.js"></script>
+
+    <script>
+        // آدرس پایه برای رندر کردن آدرس‌های استاتیک دریافت شده از بک‌آند
+        const BASE_STATIC_URL = 'http://royalcakes.ir';
+
+        document.addEventListener("DOMContentLoaded", () => {
+            // بررسی وجود توکن معتبر پیش از بارگذاری اجزا
+            if (!localStorage.getItem('access_token')) {
+                window.location.href = 'login-sigunp_page.html';
+                return;
+            }
+            fetchImages();
+        });
+
+        // ۱. دریافت لایو تصاویر گالری
+        async function fetchImages() {
+            const grid = document.getElementById('gallery-grid');
+            try {
+                const images = await ApiService.getImages();
+                grid.innerHTML = '';
+
+                if (!images || images.length === 0) {
+                    grid.innerHTML = `<div class="col-span-full text-center py-12 text-gray-400">هیچ عکسی در دیتابیس گالری ثبت نشده است.</div>`;
+                    return;
+                }
+
+                images.forEach(img => {
+                    // تصحیح هوشمند آدرس عکس‌های لوکال یا مطلق سرور
+                    const fullImageUrl = img.image_url.startsWith('http') ? img.image_url : `${BASE_STATIC_URL}${img.image_url}`;
+                    renderImageCard(img.id, img.title, img.alt_text, fullImageUrl);
+                });
+            } catch (error) {
+                console.error('Error fetching images:', error);
+                grid.innerHTML = `<div class="col-span-full text-center py-12 text-rose-600 font-medium">خطا در دریافت لیست تصاویر: ${error.message}</div>`;
+            }
+        }
+
+        // تابع کمکی تولید کارت‌ها در ساختار گرید
+        function renderImageCard(id, title, altText, imageUrl) {
+            const grid = document.getElementById('gallery-grid');
+            const card = document.createElement('div');
+            card.className = "bg-white border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between";
+            card.setAttribute('data-id', id);
+            card.innerHTML = `
+                <div>
+                    <div class="h-42 bg-gray-100 flex items-center justify-center overflow-hidden border-b">
+                        <img src="${imageUrl}" alt="${altText}" loading="lazy" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-3 space-y-1">
+                        <h4 class="font-bold text-sm text-gray-800 truncate">${title}</h4>
+                        <p class="text-[11px] text-gray-400 truncate">توضیح: ${altText}</p>
+                    </div>
+                </div>
+                <div class="p-3 bg-gray-50 border-t flex justify-between items-center">
+                    <button onclick="copyToClipboard('${imageUrl}')" class="text-blue-600 hover:text-blue-800 text-xs font-semibold transition">📋 کپی لینک</button>
+                    <button onclick="deleteImage(${id}, this)" class="text-rose-600 hover:text-rose-800 text-xs font-semibold transition">🗑️ حذف عکـس</button>
+                </div>
+            `;
+            grid.appendChild(card);
+        }
+
+        // ۲. هندل کردن عملیات آپلود فایل با فرم چندبخشی (Multipart)
+        async function handleAddImage(e) {
+            e.preventDefault();
+            const title = document.getElementById('g-title').value;
+            const altText = document.getElementById('g-alt').value;
+            const category = document.getElementById('g-category').value;
+
+            const fileInput = document.getElementById('g-file');
+            const fileObject = fileInput.files[0];
+
+            if (!fileObject) {
+                alert('لطفاً ابتدا یک فایل تصویر معتبر انتخاب کنید.');
+                return;
+            }
+
+            try {
+                // ارسال درخواست به متد بروزرسانی شده فایل api.js
+                const savedImage = await ApiService.addImage(title, altText, fileObject, category);
+                alert('فایل عکس با موفقیت بر روی سرور آپلود و ثبت شد.');
+
+                // افزودن آنی عکس به بالای ساختار گرید بدون نیاز به رفرش کل صفحه
+                const grid = document.getElementById('gallery-grid');
+
+                // پاک کردن پیام خالی بودن در صورت وجود اولین عکس
+                if (grid.children.length === 1 && grid.firstChild.classList.contains('col-span-full')) {
+                    grid.innerHTML = '';
+                }
+
+                const fullImageUrl = savedImage.image_url.startsWith('http') ? savedImage.image_url : `${BASE_STATIC_URL}${savedImage.image_url}`;
+                renderImageCard(savedImage.id, savedImage.title, savedImage.alt_text, fullImageUrl);
+
+                const newCard = grid.lastChild;
+                grid.insertBefore(newCard, grid.firstChild);
+
+                // فرمت کردن فرم و خروج
+                document.getElementById('add-image-form').reset();
+                closeModal();
+            } catch (error) {
+                console.error('Error saving image:', error);
+                alert(`خطا در فرآیند آپلود فایل: ${error.message}`);
+            }
+        }
+
+        // ۳. حذف قطعی تصویر از گالری
+        async function deleteImage(id, btn) {
+            if (!confirm('آیا از حذف دائم این تصویر از هارد و دیتابیس سرور اطمینان دارید؟')) return;
+
+            try {
+                await ApiService.deleteImage(id);
+                btn.closest('.bg-white').remove();
+                alert('تصویر با موفقیت حذف شد.');
+            } catch (error) {
+                console.error('Error deleting image:', error);
+                alert(`خطا در حذف تصویر: ${error.message}`);
+            }
+        }
+
+        // کپی دقیق لینک آدرس تصویر جهت استفاده در بخش‌های دیگر پنل (مانند مدیریت دوره‌ها)
+        function copyToClipboard(url) {
+            navigator.clipboard.writeText(url).then(() => {
+                alert('لینک مستقیم تصویر کپی شد! می‌توانید در فرم ساخت دوره استفاده کنید.');
+            }).catch(err => {
+                alert('خطا در کپی کلیپ‌بورد.');
+            });
+        }
+
+        function openModal() {
+            document.getElementById('gallery-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('gallery-modal').classList.add('hidden');
+        }
+    </script>
+</body>
+
+</html>
