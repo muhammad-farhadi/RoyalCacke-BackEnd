@@ -520,16 +520,34 @@ class SupportChatDashboard(BaseView):
             for room in distinct_rooms:
                 room_id = room[0]
                 user = db.query(User).filter(User.id == room_id).first()
+
+                # استخراج آخرین پیام
                 last_msg = db.query(SupportMessage).filter(
                     SupportMessage.room_user_id == room_id
                 ).order_by(SupportMessage.created_at.desc()).first()
+
+                # 🔴 محاسبه دقیق تعداد پیام‌های نخوانده کاربر
+                unread_count = db.query(SupportMessage).filter(
+                    SupportMessage.room_user_id == room_id,
+                    SupportMessage.sender_id == room_id,  # فقط پیام‌هایی که هنرجو فرستاده
+                    SupportMessage.is_read == False
+                ).count()
+
+                # تعیین زمان عددی برای مرتب‌سازی
+                last_activity_ts = last_msg.created_at.timestamp() if last_msg and last_msg.created_at else 0
 
                 rooms.append({
                     "id": room_id,
                     "name": user.full_name if user else f"هنرجوی شماره {room_id}",
                     "last_message": last_msg.content if last_msg else "فایلی ارسال شده است",
-                    "is_read": last_msg.is_read if last_msg else True
+                    "is_read": unread_count == 0,
+                    "unread_count": unread_count,
+                    "last_activity": last_activity_ts
                 })
+
+            # 🔴 مرتب‌سازی جادویی: اول پیام‌های نخوانده، سپس بر اساس جدیدترین زمان
+            rooms.sort(key=lambda x: (not x["is_read"], x["last_activity"]), reverse=True)
+
         finally:
             db.close()
 
@@ -539,16 +557,28 @@ class SupportChatDashboard(BaseView):
             context={"rooms": rooms, "admin_token": admin_token}
         )
 
-    # 🔴 مسیر جدید و اختصاصی برای گرفتن تاریخچه چت فقط برای ادمین پنل (بدون تداخل با اپلیکیشن)
     @expose("/support/history/{user_id}", methods=["GET"])
     def chat_history_api(self, request: Request):
-        # بررسی امنیت: فقط ادمینی که لاگین کرده اجازه دسترسی دارد
         if not request.session.get("token"):
             return JSONResponse({"detail": "Unauthorized"}, status_code=401)
 
         user_id = int(request.path_params["user_id"])
         db = SessionLocal()
         try:
+            # 🔴 آپدیت وضعیت: به محض باز شدن چت، پیام‌های نخواندهِ این هنرجو تیک می‌خورند
+            unread_msgs = db.query(SupportMessage).filter(
+                SupportMessage.room_user_id == user_id,
+                SupportMessage.sender_id == user_id,
+                SupportMessage.is_read == False
+            ).all()
+
+            for msg in unread_msgs:
+                msg.is_read = True
+
+            if unread_msgs:
+                db.commit()  # ذخیره تیک‌خوردن‌ها در دیتابیس
+
+            # استخراج تاریخچه برای نمایش در صفحه
             messages = db.query(SupportMessage).filter(
                 SupportMessage.room_user_id == user_id
             ).order_by(SupportMessage.created_at.asc()).all()
@@ -564,6 +594,7 @@ class SupportChatDashboard(BaseView):
             return JSONResponse(history)
         finally:
             db.close()
+
 
 # =========================================================================
 # بخش پایانی: تابع تزریق و لود ساختار ادمین پنل

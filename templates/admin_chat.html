@@ -31,6 +31,34 @@
             flex-direction: column;
         }
 
+        .sidebar-category {
+            padding: 8px 16px;
+            background-color: #f1f5f9;
+            font-size: 11px;
+            font-weight: bold;
+            color: #64748b;
+            border-bottom: 1px solid var(--light-border);
+        }
+
+        .unread-badge {
+            background-color: #ef4444;
+            color: white;
+            font-size: 11px;
+            padding: 2px 7px;
+            border-radius: 12px;
+            font-weight: bold;
+        }
+
+        .room-item.read-chat .room-avatar {
+            background: #f8fafc;
+            color: #a0aec0;
+        }
+
+        .room-item.read-chat .room-name {
+            color: #4a5568;
+            font-weight: 500;
+        }
+
         /* هدر کنترل پنل چت */
         .chat-header {
             background-color: var(--primary-green);
@@ -297,29 +325,42 @@
 
 <div class="chat-container">
     <!-- ستون لیست کاربران -->
-    <div class="rooms-sidebar">
-        <div class="sidebar-search">
-            <input type="text" placeholder="جستجوی نام هنرجو...">
-        </div>
-        <div class="rooms-list">
-            {% for room in rooms %}
-            <div class="room-item {% if active_room == room.id %}active{% endif %}"
-                 onclick="selectRoom('{{ room.id }}', '{{ room.name }}')">
-                <div class="room-avatar">
-                    <i class="fa-solid fa-user"></i>
+    <div class="rooms-list">
+        <!-- ۱. رندر کردن فقط پیام‌های نخوانده و جدید در صدر لیست -->
+        {% for room in rooms if not room.is_read %}
+        {% if loop.first %}
+        <div class="sidebar-category">پیام‌های جدید (نخوانده)</div>
+        {% endif %}
+        <div class="room-item {% if active_room == room.id %}active{% endif %}"
+             onclick="selectRoom('{{ room.id }}', '{{ room.name }}')">
+            <div class="room-avatar"><i class="fa-solid fa-user"></i></div>
+            <div class="room-info">
+                <div class="room-meta">
+                    <span class="room-name">{{ room.name }}</span>
+                    <span class="unread-badge">{{ room.unread_count }}</span>
                 </div>
-                <div class="room-info">
-                    <div class="room-meta">
-                        <span class="room-name">{{ room.name }}</span>
-                        {% if not room.is_read %}<span class="unread-badge"></span>{% endif %}
-                    </div>
-                    <div class="room-last-msg">{{ room.last_message }}</div>
-                </div>
+                <div class="room-last-msg">{{ room.last_message }}</div>
             </div>
-            {% endfor %}
         </div>
-    </div>
+        {% endfor %}
 
+        <!-- ۲. رندر کردن پیام‌های خوانده شده و تاریخچه در پایین لیست -->
+        {% for room in rooms if room.is_read %}
+        {% if loop.first %}
+        <div class="sidebar-category">پاسخ داده شده</div>
+        {% endif %}
+        <div class="room-item read-chat {% if active_room == room.id %}active{% endif %}"
+             onclick="selectRoom('{{ room.id }}', '{{ room.name }}')">
+            <div class="room-avatar"><i class="fa-solid fa-user"></i></div>
+            <div class="room-info">
+                <div class="room-meta">
+                    <span class="room-name">{{ room.name }}</span>
+                </div>
+                <div class="room-last-msg">{{ room.last_message }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
     <!-- ستون محیط چت زنده -->
     <div class="chat-workspace" id="chatWorkspace">
         <div class="no-chat-selected">
