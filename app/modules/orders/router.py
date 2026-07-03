@@ -1,9 +1,10 @@
 # app/modules/orders/router.py
 from typing import List
 import requests
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
-
+from starlette.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from app.core.database import get_db
 from app.core.dependencies import get_current_active_user, RequirePermission
 from app.modules.users.models import User
@@ -20,6 +21,7 @@ ZARINPAL_VERIFY_URL = "https://api.zarinpal.com/pg/v4/payment/verify.json"
 ZARINPAL_STARTPAY_URL = "https://www.zarinpal.com/pg/StartPay/"
 # این آدرس باید دقیقاً همانی باشد که فرانت‌اند یا سرور شما به عنوان برگشت روی آن گوش می‌دهد
 CALLBACK_URL = "https://royalcakes.ir/api/v1/orders/verify-payment"
+templates = Jinja2Templates(directory="templates")
 
 
 # --- مدیریت سبد خرید ---
@@ -122,28 +124,66 @@ def checkout(data: schemas.CheckoutRequest, db: Session = Depends(get_db),
         raise HTTPException(status_code=500, detail="خطا در ارتباط با سرورهای زرین‌پال.")
 
 
-@router.get("/verify-payment")
-def verify_zarinpal_payment(Authority: str, Status: str, db: Session = Depends(get_db)):
+@router.get("/verify-payment", response_class=HTMLResponse)
+def verify_zarinpal_payment(
+        request: Request,
+        Authority: str,
+        Status: str,
+        db: Session = Depends(get_db)
+):
     """
-    آدرس بازگشتی از درگاه زرین‌پال. بررسی و تایید نهایی پرداخت.
+    آدرس بازگشتی از درگاه زرین‌پال. بررسی، تایید نهایی و رندر صفحه رسید HTML.
     """
     # ۱. پیدا کردن رکورد پرداخت با استفاده از Authority
     payment = db.query(models.Payment).filter(models.Payment.authority == Authority).first()
 
+    # اگر اصلاً چنین تراکنشی در دیتابیس نبود
     if not payment:
-        raise HTTPException(status_code=404, detail="تراکنش مورد نظر یافت نشد.")
+        return templates.TemplateResponse(
+            request=request,
+            name="payment_result.html",
+            context={
+                "success": False,
+                "order_id": "نامشخص",
+                "ref_id": None,
+                "amount": "۰"
+            },
+            status_code=404
+        )
 
+    # فرمت کردن مبلغ به همراه کاما برای نمایش شکیل‌تر در رسید
+    formatted_amount = "{:,}".format(payment.amount)
+
+    # اگر تراکنش قبلاً پرداخت و تایید شده باشد
     if payment.status == "paid":
-        return {"message": "این تراکنش قبلاً با موفقیت تایید شده است."}
+        return templates.TemplateResponse(
+            request=request,
+            name="payment_result.html",
+            context={
+                "success": True,
+                "order_id": payment.order_id,
+                "ref_id": payment.ref_id,
+                "amount": formatted_amount
+            }
+        )
 
-    # ۲. اگر کاربر پرداخت را لغو کرده باشد
+    # ۲. اگر کاربر پرداخت را در درگاه بانک لغو کرده باشد (وضعیت NOK شما)
     if Status != "OK":
         payment.status = "canceled"
         db.commit()
-        # در سیستم واقعی بهتر است اینجا کاربر را به یک صفحه HTML (مثل صفحه پرداخت ناموفق) ریدایرکت کنید
-        raise HTTPException(status_code=400, detail="پرداخت ناموفق بود یا توسط شما لغو شد.")
 
-    # ۳. تایید نهایی تراکنش (Verify)
+        return templates.TemplateResponse(
+            request=request,
+            name="payment_result.html",
+            context={
+                "success": False,
+                "order_id": payment.order_id,
+                "ref_id": None,
+                "amount": formatted_amount
+            }
+        )
+
+    # ۳. تایید نهایی تراکنش از سرور زرین‌پال (Verify)
     verify_payload = {
         "merchant_id": ZARINPAL_MERCHANT_ID,
         "amount": payment.amount,
@@ -154,20 +194,16 @@ def verify_zarinpal_payment(Authority: str, Status: str, db: Session = Depends(g
         response = requests.post(ZARINPAL_VERIFY_URL, json=verify_payload, timeout=10)
         res_data = response.json()
 
-        # کد 100 یعنی پرداخت موفق، کد 101 یعنی پرداخت قبلا تایید شده
         if res_data.get("data") and res_data["data"].get("code") in [100, 101]:
             ref_id = res_data["data"]["ref_id"]
 
-            # آپدیت وضعیت پرداخت
             payment.status = "paid"
             payment.ref_id = str(ref_id)
 
-            # آپدیت وضعیت فاکتور
             order = db.query(models.Order).filter(models.Order.id == payment.order_id).first()
             if order:
                 order.status = "paid"
 
-                # ایجاد دسترسی دوره‌ها برای کاربر
                 for item in order.items:
                     enrollment = models.Enrollment(
                         user_id=order.user_id,
@@ -179,20 +215,44 @@ def verify_zarinpal_payment(Authority: str, Status: str, db: Session = Depends(g
 
             db.commit()
 
-            # در سیستم واقعی اینجا باید یک ریدایرکت به صفحه پرداخت موفق فرانت‌اند انجام دهید:
-            # from fastapi.responses import RedirectResponse
-            # return RedirectResponse(url=f"http://your-frontend.com/payment/success?ref={ref_id}")
-
-            return {"success": True, "message": "پرداخت با موفقیت انجام شد.", "ref_id": ref_id}
+            return templates.TemplateResponse(
+                request=request,
+                name="payment_result.html",
+                context={
+                    "success": True,
+                    "order_id": payment.order_id,
+                    "ref_id": str(ref_id),
+                    "amount": formatted_amount
+                }
+            )
 
         else:
             payment.status = "failed"
             db.commit()
-            errors = res_data.get("errors", "خطا در تایید تراکنش")
-            raise HTTPException(status_code=400, detail=f"پرداخت تایید نشد: {errors}")
+
+            return templates.TemplateResponse(
+                request=request,
+                name="payment_result.html",
+                context={
+                    "success": False,
+                    "order_id": payment.order_id,
+                    "ref_id": None,
+                    "amount": formatted_amount
+                }
+            )
 
     except requests.exceptions.RequestException:
-        raise HTTPException(status_code=500, detail="خطا در ارتباط با سرور زرین‌پال جهت تایید تراکنش.")
+        return templates.TemplateResponse(
+            request=request,
+            name="payment_result.html",
+            context={
+                "success": False,
+                "order_id": payment.order_id,
+                "ref_id": None,
+                "amount": formatted_amount
+            },
+            status_code=500
+        )
 
 
 @router.post("/discounts", response_model=schemas.DiscountResponse, status_code=status.HTTP_201_CREATED)
