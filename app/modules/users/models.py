@@ -41,7 +41,7 @@ class User(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
                         onupdate=lambda: datetime.now(timezone.utc))
-
+    current_session_id = Column(String, nullable=True)
     # روابط (Relationships)
     roles = relationship("Role", secondary=user_roles, back_populates="users")
 

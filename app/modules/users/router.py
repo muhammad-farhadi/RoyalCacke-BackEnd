@@ -1,4 +1,5 @@
 # app/modules/users/router.py
+import uuid
 from datetime import datetime, timezone
 from typing import List
 
@@ -62,9 +63,16 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     if not user.is_verified:
         raise HTTPException(status_code=403, detail="لطفا ابتدا حساب کاربری خود را تایید کنید.")
 
-    # تولید هر دو توکن
-    access_token = create_access_token(data={"sub": user.phone_number})
-    refresh_token = create_refresh_token(data={"sub": user.phone_number})
+    # 🔴 ۱. تولید یک شناسه سشن جدید و منحصربه‌فرد برای این لاگین جدید
+    new_session_id = str(uuid.uuid4())
+
+    # 🔴 ۲. بروزرسانی مقدار در دیتابیس (با این کار سشن قبلی درجا باطل می‌شود)
+    user.current_session_id = new_session_id
+    db.commit()
+
+    # 🔴 ۳. ارسال session_id در دیتای توکن‌ها
+    access_token = create_access_token(data={"sub": user.phone_number, "session_id": new_session_id})
+    refresh_token = create_refresh_token(data={"sub": user.phone_number, "session_id": new_session_id})
 
     return {
         "access_token": access_token,
@@ -82,30 +90,38 @@ def refresh_token(data: schemas.RefreshTokenRequest, db: Session = Depends(get_d
     )
 
     try:
-        # دیکد کردن رفرش توکن
         payload = jwt.decode(data.refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
 
-        # بررسی نوع توکن که حتماً رفرش باشه
         if payload.get("type") != "refresh":
             raise credentials_exception
 
         phone_number: str = payload.get("sub")
-        if phone_number is None:
+        # 🔴 دریافت session_id از داخل رفرش توکن
+        token_session_id: str = payload.get("session_id")
+
+        if phone_number is None or token_session_id is None:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
 
-    # بررسی وجود کاربر و فعال بودن آن
     user = db.query(models.User).filter(models.User.phone_number == phone_number).first()
     if user is None or not user.is_active:
         raise credentials_exception
 
-    # صدور اکسس توکن جدید (اختیاری: می‌تونی اینجا یک رفرش توکن جدید هم صادر کنی)
-    new_access_token = create_access_token(data={"sub": user.phone_number})
+    # 🔴 ۴. اعتبارسنجی: اگر سشنِ رفرش توکن با دیتابیس یکی نبود یعنی دستگاه قدیمی است و باید بیرون انداخته شود
+    if user.current_session_id != token_session_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="این حساب در دستگاه دیگری فعال شده است. لطفا مجددا لاگین کنید.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # صدور اکسس توکن جدید با همان سشن معتبر فعلی
+    new_access_token = create_access_token(data={"sub": user.phone_number, "session_id": token_session_id})
 
     return {
         "access_token": new_access_token,
-        "refresh_token": data.refresh_token,  # همون رفرش توکن قبلی رو برمی‌گردونیم
+        "refresh_token": data.refresh_token,
         "token_type": "bearer"
     }
 
