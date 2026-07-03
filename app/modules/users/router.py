@@ -13,6 +13,7 @@ import random
 from datetime import datetime, timedelta, timezone
 from . import schemas, services, models
 from .models import User
+from .services import send_otp_sms
 
 router = APIRouter()
 
@@ -190,8 +191,8 @@ def resend_otp(data: schemas.ResendOTPRequest, db: Session = Depends(get_db)):
     db.commit()
 
     # ماک ارسال پیامک (در آینده اینجا به API کاوه نگار یا ملی پیامک وصل می‌شود)
-    print(f"\n{'=' * 40}\n[SMS MOCK] ارسال مجدد کد تایید برای {user.phone_number}:\nکد: {otp}\n{'=' * 40}\n")
-
+    # print(f"\n{'=' * 40}\n[SMS MOCK] ارسال مجدد کد تایید برای {user.phone_number}:\nکد: {otp}\n{'=' * 40}\n")
+    send_otp_sms(user.phone_number, otp)
     return {"message": "کد تایید جدید با موفقیت به شماره شما ارسال شد."}
 
 
