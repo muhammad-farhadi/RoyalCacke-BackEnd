@@ -17,8 +17,11 @@ from app.core.database import get_db
 # شما باید get_current_user را در فایل dependencies.py خود داشته باشید
 from app.core.dependencies import RequirePermission, get_current_user
 from app.modules.orders.models import Enrollment  # برای بررسی دسترسی کاربر به دوره
-from app.modules.courses.models import Lesson  # برای کوئری مستقیم جلسات
+from app.modules.courses.models import Lesson, CourseReview  # برای کوئری مستقیم جلسات
 from . import schemas, services
+from .schemas import ReviewResponseSchema
+from ..users.models import User
+from ...admin import save_uploaded_file
 from ...core.security import SECRET_KEY
 
 router = APIRouter()
@@ -253,3 +256,57 @@ def get_stream_ticket(lesson_id: int, db: Session = Depends(get_db), current_use
     ticket = jwt.encode(ticket_payload, SECRET_KEY, algorithm="HS256")
 
     return {"ticket": ticket}
+
+
+# 🔴 ۱. روت دریافت نظرات تایید شده یک دوره
+@router.get("/{course_id}/reviews", response_model=List[ReviewResponseSchema])
+def get_course_reviews(course_id: int, db: Session = Depends(get_db)):
+    reviews = (
+        db.query(CourseReview)
+        .filter(CourseReview.course_id == course_id, CourseReview.is_approved == True)
+        .order_by(CourseReview.created_at.desc())
+        .all()
+    )
+    return reviews
+
+
+# 🔴 ۲. روت ثبت نظر جدید (مخصوص خریداران دوره + پشتیبانی از آپلود عکس)
+@router.post("/{course_id}/reviews", status_code=status.HTTP_201_CREATED)
+async def submit_course_review(
+        course_id: int,
+        content: str = Form(...),
+        image: Optional[UploadFile] = File(None),
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    # الف) بررسی اینکه آیا کاربر واقعاً این دوره را خریده است؟
+    has_purchased = db.query(Enrollment).filter(
+        Enrollment.user_id == current_user.id,
+        Enrollment.course_id == course_id
+    ).first()
+
+    if not has_purchased:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="شما دانشجوی این دوره نیستید و اجازه ثبت نظر ندارید."
+        )
+
+    # ب) هندل کردن آپلود عکس اختیاری نظر
+    uploaded_image_url = None
+    if image and image.filename:
+        # ذخیره در پوشه تفکیک شده نظرات
+        uploaded_image_url = await save_uploaded_file(image, "courses/reviews")
+
+    # ج) ثبت در دیتابیس (به صورت پیش‌فرض تایید نشده است تا ادمین تایید کند)
+    new_review = CourseReview(
+        user_id=current_user.id,
+        course_id=course_id,
+        content=content,
+        image_url=uploaded_image_url,
+        is_approved=False
+    )
+
+    db.add(new_review)
+    db.commit()
+
+    return {"detail": "نظر شما با موفقیت ثبت شد و پس از تایید مدیریت نمایش داده می‌شود."}

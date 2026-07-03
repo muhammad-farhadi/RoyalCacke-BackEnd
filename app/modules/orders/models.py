@@ -12,6 +12,9 @@ class Cart(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
     items = relationship("CartItem", back_populates="cart", cascade="all, delete-orphan")
 
+    def __str__(self):
+        return self.id
+
 
 class CartItem(Base):
     __tablename__ = "cart_items"
@@ -19,6 +22,9 @@ class CartItem(Base):
     cart_id = Column(Integer, ForeignKey("carts.id", ondelete="CASCADE"), nullable=False)
     course_id = Column(Integer, ForeignKey("courses.id", ondelete="CASCADE"), nullable=False)
     cart = relationship("Cart", back_populates="items")
+
+    def __str__(self):
+        return self.cart_id
 
 
 # ================= 2. کدهای تخفیف =================
@@ -32,6 +38,9 @@ class Discount(Base):
     used_count = Column(Integer, default=0)  # تعداد دفعاتی که تا الان استفاده شده
     valid_until = Column(DateTime, nullable=True)  # تاریخ انقضا
     is_active = Column(Boolean, default=True)
+
+    def __str__(self):
+        return self.code
 
 
 # ================= 3. فاکتور و اقلام =================
@@ -53,6 +62,9 @@ class Order(Base):
     items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
     payments = relationship("Payment", back_populates="order", cascade="all, delete-orphan")
 
+    def __str__(self):
+        return self.user_id
+
 
 class OrderItem(Base):
     __tablename__ = "order_items"
@@ -61,6 +73,9 @@ class OrderItem(Base):
     course_id = Column(Integer, ForeignKey("courses.id", ondelete="CASCADE"), nullable=False)
     price = Column(Integer, nullable=False)
     order = relationship("Order", back_populates="items")
+
+    def __str__(self):
+        return self.order_id
 
 
 # ================= 4. تراکنش بانکی =================
@@ -76,6 +91,9 @@ class Payment(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     order = relationship("Order", back_populates="payments")
 
+    def __str__(self):
+        return self.order_id
+
 
 # ================= 5. دسترسی دوره‌ها =================
 class Enrollment(Base):
@@ -86,3 +104,6 @@ class Enrollment(Base):
     order_id = Column(Integer, ForeignKey("orders.id", ondelete="SET NULL"), nullable=True)
     purchased_price = Column(Integer, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def __str__(self):
+        return self.user_id

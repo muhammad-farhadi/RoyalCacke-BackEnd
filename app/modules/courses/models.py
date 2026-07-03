@@ -27,6 +27,9 @@ class Course(Base):
     # رابطه با جلسات دوره (در صورت حذف دوره، تمام ویدیوها هم حذف می‌شوند)
     lessons = relationship("Lesson", back_populates="course", cascade="all, delete-orphan")
 
+    def __str__(self):
+        return self.title
+
 
 class Lesson(Base):
     __tablename__ = "lessons"
@@ -46,3 +49,26 @@ class Lesson(Base):
 
     # رابطه معکوس با دوره
     course = relationship("Course", back_populates="lessons")
+
+    def __str__(self):
+        return self.title
+
+class CourseReview(Base):
+    __tablename__ = "course_reviews"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    course_id = Column(Integer, ForeignKey("courses.id", ondelete="CASCADE"), nullable=False)
+
+    content = Column(Text, nullable=False)  # متن نظر هنرجو
+    image_url = Column(String, nullable=True)  # عکس ضمیمه نظر (اختیاری)
+    is_approved = Column(Boolean, default=False, nullable=False)  # وضعیت تایید ادمین
+
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    # روابط (Relationships)
+    user = relationship("User")
+    course = relationship("Course")
+
+    def __str__(self):
+        return f"{self.user.full_name}-{self.course.name}"

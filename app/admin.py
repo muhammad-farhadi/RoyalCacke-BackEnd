@@ -1,6 +1,6 @@
 # app/admin.py
 import os
-import sys
+from markupsafe import Markup
 import uuid
 from sqladmin import Admin, ModelView
 from sqladmin.authentication import AuthenticationBackend
@@ -29,7 +29,7 @@ from app.core.security import verify_password, create_access_token, SECRET_KEY, 
 # ایمپورت تمامی مدل‌های پروژه شما
 from app.modules.users.models import User, Role, Permission
 from app.modules.articles.models import Article
-from app.modules.courses.models import Course, Lesson
+from app.modules.courses.models import Course, Lesson, CourseReview
 from app.modules.gallery.models import GalleryItem
 from app.modules.index.models import ContactMessage
 from app.modules.orders.models import Cart, CartItem, Discount, Order, OrderItem, Payment, Enrollment
@@ -557,6 +557,39 @@ class HighlightItemAdmin(ModelView, model=HighlightItem):
         return True
 
 
+class CourseReviewAdmin(ModelView, model=CourseReview):
+    name = "نظر دوره"
+    name_plural = "۱۹. نظرات دوره‌های آموزشی"
+    icon = "fa-solid fa-comment-dots"
+
+    # 🔴 اضافه کردن image_url به لیست ستون‌های جدول ادمین
+    column_list = ["id", "course.title", "user.full_name", "image_url", "is_approved", "created_at"]
+
+    # ادمین در فرم ویرایش فقط بتواند وضعیت تایید را تغییر دهد
+    form_columns = ["is_approved"]
+
+    column_labels = {
+        "id": "شناسه ردیف",
+        "course.title": "دوره آموزشی",
+        "user.full_name": "نام هنرجو",
+        "image_url": "عکس ضمیمه نظر",  # 🔴 لیبل ستون جدید عکس
+        "is_approved": "وضعیت انتشار (تایید شده؟)",
+        "created_at": "تاریخ ارسال نظر"
+    }
+
+    # 🔴 لود کردن و نمایش زنده عکس داخل جدول ادمین پنل با قالب‌دهی HTML
+    column_formatters = {
+        "image_url": lambda model, attribute: Markup(
+            f'<a href="{model.image_url}" target="_blank">'
+            f'<img src="{model.image_url}" style="max-height: 50px; max-width: 50px; border-radius: 8px; object-fit: cover; border: 1px solid #ddd;" />'
+            f'</a>'
+        ) if model.image_url else "بدون عکس"
+    }
+
+    def is_accessible(self, request: Request) -> bool:
+        return True
+
+
 # =========================================================================
 # بخش پایانی: تابع تزریق و لود ساختار ادمین پنل با MutationObserver هوشمند
 # =========================================================================
@@ -592,5 +625,6 @@ def init_admin(app):
     admin.add_view(SupportMessageAdmin)
     admin.add_view(HighlightCategoryAdmin)
     admin.add_view(HighlightItemAdmin)
+    admin.add_view(CourseReviewAdmin)
 
     return admin

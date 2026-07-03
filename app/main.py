@@ -23,6 +23,7 @@ os.makedirs("app/static/gallery", exist_ok=True)
 os.makedirs("app/static/courses/images", exist_ok=True)
 os.makedirs("app/static/courses/videos", exist_ok=True)
 os.makedirs("app/static/highlights", exist_ok=True)
+os.makedirs("app/static/courses/reviews", exist_ok=True)
 app = FastAPI(
     title="Royal Cake Academy API",
     description="Backend services for the Academy Mobile App and Website",

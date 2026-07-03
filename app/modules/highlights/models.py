@@ -19,6 +19,7 @@ class HighlightCategory(Base):
     def __str__(self):
         return self.title
 
+
 class HighlightItem(Base):
     __tablename__ = "highlight_items"
 
@@ -29,3 +30,6 @@ class HighlightItem(Base):
 
     # رابطه برگشتی به دسته
     category = relationship("HighlightCategory", back_populates="items")
+
+    def __str__(self):
+        return self.category.title

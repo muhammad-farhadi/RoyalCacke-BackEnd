@@ -25,3 +25,6 @@ class SupportMessage(Base):
 
     room_user = relationship("User", foreign_keys=[room_user_id])
     sender = relationship("User", foreign_keys=[sender_id])
+
+    def __str__(self):
+        return self.sender.full_name
