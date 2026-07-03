@@ -14,12 +14,12 @@ import random
 router = APIRouter()
 
 # تنظیمات زرین‌پال (بهتر است بعداً به فایل .env منتقل شود)
-ZARINPAL_MERCHANT_ID = "00000000-0000-0000-0000-000000000000"
+ZARINPAL_MERCHANT_ID = "2045c3ee-1054-46ad-8769-7fa7cb492535"
 ZARINPAL_REQUEST_URL = "https://api.zarinpal.com/pg/v4/payment/request.json"
 ZARINPAL_VERIFY_URL = "https://api.zarinpal.com/pg/v4/payment/verify.json"
 ZARINPAL_STARTPAY_URL = "https://www.zarinpal.com/pg/StartPay/"
 # این آدرس باید دقیقاً همانی باشد که فرانت‌اند یا سرور شما به عنوان برگشت روی آن گوش می‌دهد
-CALLBACK_URL = "http://localhost:8000/orders/verify-payment"
+CALLBACK_URL = "https://royalcakes.ir/api/v1/orders/verify-payment"
 
 
 # --- مدیریت سبد خرید ---

@@ -53,6 +53,7 @@ class Lesson(Base):
     def __str__(self):
         return self.title
 
+
 class CourseReview(Base):
     __tablename__ = "course_reviews"
 
