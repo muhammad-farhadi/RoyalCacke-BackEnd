@@ -468,111 +468,19 @@ class SupportMessageAdmin(ModelView, model=SupportMessage):
 # بخش پایانی: تابع تزریق و لود ساختار ادمین پنل با MutationObserver هوشمند
 # =========================================================================
 def init_admin(app):
-    rtl_injector = """
-    <script>
-        document.documentElement.dir = 'rtl';
-        document.documentElement.lang = 'fa';
-
-        const translations = {
-            "Actions": "عملیات مدیریت",
-            "Delete": "حذف کردن",
-            "Edit": "ویرایش",
-            "Details": "جزئیات",
-            "Save": "ذخیره تغییرات",
-            "Cancel": "انصراف",
-            "Add": "افزودن جدید",
-            "Search": "جستجو در داده‌ها...",
-            "Reset": "پاک کردن فیلتر",
-            "Apply": "اعمال فیلتر",
-            "Filters": "فیلترها",
-            "Select record": "انتخاب",
-            "Are you sure you want to delete this item?": "آیا از حذف قطعی این رکورد اطمینان کامل دارید؟",
-            "Next": "صفحه بعدی",
-            "Previous": "صفحه قبلی",
-            "Items per page": "تعداد در هر صفحه",
-            "Save and continue editing": "ذخیره و ادامه ویرایش",
-            "Save and add another": "ذخیره و ایجاد یکی دیگر",
-            "Save as new": "ذخیره به عنوان رکورد جدید",
-            "Username": "شماره تماس مدیر (Superuser)",
-            "Password": "رمز عبور",
-            "Sign in": "ورود به پنل مدیریت"
-        };
-
-        function translateElement(node) {
-            if (node.nodeType === Node.TEXT_NODE) {
-                let trimmed = node.nodeValue.trim();
-                if (translations[trimmed]) {
-                    node.nodeValue = node.nodeValue.replace(trimmed, translations[trimmed]);
-                }
-            } else if (node.nodeType === Node.ELEMENT_NODE) {
-                if (node.hasAttribute("placeholder")) {
-                    let p = node.getAttribute("placeholder").trim();
-                    if (translations[p]) node.setAttribute("placeholder", translations[p]);
-                }
-                if (node.tagName === "INPUT" && node.hasAttribute("value")) {
-                    let v = node.getAttribute("value").trim();
-                    if (translations[v]) node.setAttribute("value", translations[v]);
-                }
-                if (node.tagName === "BUTTON") {
-                    let btnText = node.innerText.trim();
-                    if (translations[btnText]) node.innerText = translations[btnText];
-                }
-                for (let child of node.childNodes) {
-                    translateElement(child);
-                }
-            }
-        }
-
-        const observer = new MutationObserver((mutations) => {
-            for (let mutation of mutations) {
-                for (let node of mutation.addedNodes) {
-                    translateElement(node);
-                }
-            }
-            document.querySelectorAll('button, input[type="submit"], .btn').forEach(el => {
-                let txt = el.innerText ? el.innerText.trim() : "";
-                if (translations[txt]) el.innerText = translations[txt];
-                let val = el.value ? el.value.trim() : "";
-                if (translations[val]) el.value = translations[val];
-            });
-        });
-
-        document.addEventListener('DOMContentLoaded', function() {
-            var style = document.createElement('style');
-            style.innerHTML = `
-                body, html, .page, .navbar, .card, .form-control, .form-select, .modal-content, .toast, .form-label, .btn { 
-                    direction: rtl !important; 
-                    text-align: right !important; 
-                    font-family: 'Tahoma', 'Vazirmatn', sans-serif !important;
-                }
-                .ms-auto { margin-right: auto !important; margin-left: 0 !important; }
-                .me-auto { margin-left: auto !important; margin-right: 0 !important; }
-                .dropdown-menu-end { left: 0 !important; right: auto !important; text-align: right !important; }
-                .form-check { padding-right: 1.5em !important; padding-left: 0 !important; }
-                .form-check .form-check-input { float: right !important; margin-right: -1.5em !important; margin-left: 0 !important; }
-                .breadcrumb-item + .breadcrumb-item::before { float: right !important; padding-left: 0.5rem !important; padding-right: 0 !important; }
-                .ts-wrapper .ts-control { text-align: right !important; direction: rtl !important; }
-                .btn-list { direction: rtl !important; text-align: right !important; }
-            `;
-            document.head.appendChild(style);
-
-            translateElement(document.body);
-            observer.observe(document.body, { childList: true, subtree: true });
-        });
-    </script>
-    """
-
-    admin_title = f"رویال کیک آکادمی {rtl_injector}"
+    # عنوان رو کاملاً تمیز و بدون اسکریپت بنویس
+    admin_title = "رویال کیک آکادمی"
 
     admin = Admin(
         app,
         engine,
         title=admin_title,
         base_url="/admin",
+        templates_dir="templates",  # معرفی پوشه قالبی که الان ساختیم
         authentication_backend=authentication_backend
     )
 
-    # ثبت ماژول‌ها
+    # ثبت ماژول‌ها به ترتیب منطقی
     admin.add_view(UserAdmin)
     admin.add_view(RoleAdmin)
     admin.add_view(PermissionAdmin)
