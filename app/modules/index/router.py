@@ -1,9 +1,11 @@
 # app/modules/index/router.py
+import os
+
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, status
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from typing import Optional
+from fastapi.responses import FileResponse
 
 from app.core.database import get_db
 from app.modules.courses.services import get_courses
@@ -16,6 +18,7 @@ from datetime import datetime
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
+APK_FILE_PATH = "app/static/apps/RoyalCake.apk"
 
 
 def to_jalali_filter(date_obj: datetime):
@@ -132,55 +135,24 @@ def render_single_course(request: Request, course_id: int, db: Session = Depends
     )
 
 
-# @router.get("/login", response_class=HTMLResponse)
-# def render_login_page(request: Request):
-#     """
-#     رندر کردن فرم ورود به پنل مدیریت
-#     """
-#     return templates.TemplateResponse(
-#         request=request,
-#         name="login-sigunp_page.html",
-#         context={}
-#     )
-#
-#
-# @router.get("/admin", response_class=HTMLResponse)
-# def render_admin_dashboard(request: Request, db: Session = Depends(get_db)):
-#     """
-#     رندر کردن داشبورد اصلی پنل مدیریت رویال کیک
-#     """
-#     # در فایل فرانت‌کار، آمارها هم به صورت فرانت‌اندی (با api.js) لود می‌شوند
-#     # و هم ما می‌توانیم از سمت بک‌اند جی‌ان‌جی‌آیی بفرستیم.
-#     # برای امنیت و سرعت، رندر اولیه صفحه را انجام می‌دهیم
-#     return templates.TemplateResponse(
-#         request=request,
-#         name="panelmanagement.html",  # نام فایل اصلی داشبورد
-#         context={}
-#     )
-#
-#
-# @router.get("/admin/courses", response_class=HTMLResponse)
-# def render_admin_courses(request: Request):
-#     return templates.TemplateResponse(request=request, name="courses.html", context={})
-#
-#
-# @router.get("/admin/users", response_class=HTMLResponse)
-# def render_admin_users(request: Request):
-#     return templates.TemplateResponse(request=request, name="users.html", context={})
-#
-#
-# @router.get("/admin/orders", response_class=HTMLResponse)
-# def render_admin_orders(request: Request):
-#     return templates.TemplateResponse(request=request, name="orders.html", context={})
-#
-#
-# @router.get("/admin/gallery", response_class=HTMLResponse)
-# def render_admin_gallery(request: Request):
-#     return templates.TemplateResponse(request=request, name="gallery.html", context={})
-#
-#
-# @router.get("/admin/articles", response_class=HTMLResponse)
-# def render_admin_articles(request: Request):
-#     return templates.TemplateResponse(request=request, name="articles.html", context={})
-#
-#
+@router.get("/download/android", response_class=FileResponse)
+def download_android_apk():
+    """
+    روتر دانلود مستقیم آخرین نسخه اپلیکیشن اندروید رویال کیک
+    """
+    # ۱. بررسی فیزیکی وجود فایل روی سرور برای جلوگیری از کرش کردن سیستم
+    if not os.path.exists(APK_FILE_PATH):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="فایل اپلیکیشن اندروید در حال حاضر روی سرور بارگذاری نشده است. لطفاً با پشتیبانی تماس بگیرید."
+        )
+
+    # ۲. تعیین نام فایل هنگام دانلود در گوشی کاربر
+    download_filename = "RoyalCake.apk"
+
+    # ۳. ارسال فایل به صورت دانلود مستقیم (Attachment)
+    return FileResponse(
+        path=APK_FILE_PATH,
+        media_type="application/vnd.android.package-archive",
+        filename=download_filename
+    )
