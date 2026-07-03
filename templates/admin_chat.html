@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پنل پشتیبانی و چت زنده | رویال کیک</title>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet"
+          type="text/css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary-green: #14876b;
+            --accent-pink: #FF69B4;
+            --dark-bg: #1a202c;
+            --light-border: #e2e8f0;
+            --chat-bg: #f7fafc;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Vazirmatn', sans-serif;
+        }
+
+        body {
+            background-color: #f8fafc;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* هدر کنترل پنل چت */
+        .chat-header {
+            background-color: var(--primary-green);
+            color: white;
+            padding: 15px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .btn-back {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        /* لایوت اصلی چت باکس */
+        .chat-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* ستون سمت راست: لیست اتاق‌های گفتگو */
+        .rooms-sidebar {
+            width: 320px;
+            background: white;
+            border-left: 1px solid var(--light-border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-search {
+            padding: 15px;
+            border-bottom: 1px solid var(--light-border);
+        }
+
+        .sidebar-search input {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 1px solid #cbd5e0;
+            outline: none;
+            font-size: 13px;
+        }
+
+        .rooms-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .room-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .room-item:hover {
+            background-color: #f8fafc;
+        }
+
+        .room-item.active {
+            background-color: rgba(20, 135, 107, 0.06);
+            border-right: 4px solid var(--primary-green);
+        }
+
+        .room-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50px;
+            background: #edf2f7;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--primary-green);
+            font-size: 18px;
+        }
+
+        .room-info {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .room-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .room-name {
+            font-weight: 700;
+            font-size: 13.5px;
+            color: #2d3748;
+            white-space: nowrap;
+            overflow: text-overflow;
+            text-overflow: ellipsis;
+        }
+
+        .room-last-msg {
+            font-size: 12px;
+            color: #718096;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .unread-badge {
+            width: 8px;
+            height: 8px;
+            background-color: red;
+            border-radius: 50%;
+        }
+
+        /* ستون سمت چپ: محیط گفتگو */
+        .chat-workspace {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--chat-bg);
+        }
+
+        .no-chat-selected {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #a0aec0;
+            gap: 12px;
+        }
+
+        .active-chat-header {
+            background: white;
+            padding: 15px 24px;
+            border-bottom: 1px solid var(--light-border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .messages-area {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* استایل حباب‌های چت */
+        .msg-row {
+            display: flex;
+            width: 100%;
+        }
+
+        .msg-row.user {
+            justify-content: flex-start;
+        }
+
+        .msg-row.admin {
+            justify-content: flex-end;
+        }
+
+        .msg-bubble {
+            max-width: 65%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 13.5px;
+            line-height: 1.6;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        }
+
+        .msg-row.user .msg-bubble {
+            background: white;
+            color: #2d3748;
+            border-top-right-radius: 2px;
+        }
+
+        .msg-row.admin .msg-bubble {
+            background: var(--primary-green);
+            color: white;
+            border-top-left-radius: 2px;
+        }
+
+        .msg-time {
+            font-size: 10px;
+            margin-top: 4px;
+            display: block;
+            text-align: left;
+            opacity: 0.6;
+        }
+
+        /* کادر ابزار پایین ارسال پیام */
+        .input-area {
+            background: white;
+            padding: 16px 24px;
+            border-top: 1px solid var(--light-border);
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .input-area input {
+            flex: 1;
+            padding: 14px;
+            border-radius: 14px;
+            border: 1px solid #cbd5e0;
+            outline: none;
+            font-size: 13.5px;
+        }
+
+        .btn-send {
+            background: var(--primary-green);
+            color: white;
+            border: none;
+            width: 46px;
+            height: 46px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 16px;
+        }
+
+        .btn-send:hover {
+            background: #0f6c55;
+        }
+    </style>
+</head>
+<body>
+
+<div class="chat-header">
+    <div class="header-title">
+        <i class="fa-solid fa-headset"></i>
+        <span>مرکز پشتیبانی زنده و گفتگو با هنرجویان رویال کیک</span>
+    </div>
+    <a href="/admin" class="btn-back"><i class="fa-solid fa-arrow-left"></i> بازگشت به داشبورد</a>
+</div>
+
+<div class="chat-container">
+    <!-- ستون لیست کاربران -->
+    <div class="rooms-sidebar">
+        <div class="sidebar-search">
+            <input type="text" placeholder="جستجوی نام هنرجو...">
+        </div>
+        <div class="rooms-list">
+            {% for room in rooms %}
+            <div class="room-item {% if active_room == room.id %}active{% endif %}"
+                 onclick="selectRoom('{{ room.id }}', '{{ room.name }}')">
+                <div class="room-avatar">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+                <div class="room-info">
+                    <div class="room-meta">
+                        <span class="room-name">{{ room.name }}</span>
+                        {% if not room.is_read %}<span class="unread-badge"></span>{% endif %}
+                    </div>
+                    <div class="room-last-msg">{{ room.last_message }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- ستون محیط چت زنده -->
+    <div class="chat-workspace" id="chatWorkspace">
+        <div class="no-chat-selected">
+            <i class="fa-solid fa-comments" style="font-size: 48px; color: #cbd5e0;"></i>
+            <span>برای شروع گفتگو، یک هنرجو را از لیست سمت راست انتخاب کنید.</span>
+        </div>
+    </div>
+</div>
+<script>
+    let currentRoomId = null;
+    let ws = null;
+    const adminToken = "{{ admin_token }}";
+    const wsProtocol = window.location.protocol === "https:" ? "wss://" : "ws://";
+
+    function selectRoom(roomId, roomName) {
+        currentRoomId = roomId;
+
+        document.querySelectorAll('.room-item').forEach(el => el.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+
+        const workspace = document.getElementById('chatWorkspace');
+        workspace.innerHTML = `
+            <div class="active-chat-header">
+                <div class="room-avatar"><i class="fa-solid fa-user"></i></div>
+                <div>
+                    <div style="font-weight: bold; font-size: 14px;">${roomName}</div>
+                    <div style="font-size: 11px; color: #25D366;"><i class="fa-solid fa-circle" style="font-size: 8px;"></i> در حال گفتگو</div>
+                </div>
+            </div>
+            <div class="messages-area" id="msgArea"></div>
+            <div class="input-area">
+                <input type="text" id="msgInput" placeholder="پاسخ خود را بنویسید..." onkeypress="checkEnter(event)">
+                <button class="btn-send" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        `;
+
+        // ۱. دریافت تاریخچه از API اختصاصی ادمین پنل (بدون تداخل با روترهای اپلیکیشن)
+        fetch(`/admin/support/history/${roomId}`)
+            .then(res => {
+                if (!res.ok) throw new Error("ارور در دریافت پیام‌ها");
+                return res.json();
+            })
+            .then(messages => {
+                messages.forEach(msg => {
+                    // چاپ پیام‌ها در راست و چپ
+                    appendMessage(msg.content, String(msg.sender_id) === String(roomId) ? 'user' : 'admin');
+                });
+                scrollToBottom();
+            }).catch(err => {
+            console.log(err);
+        });
+
+        // ۲. اتصال به وب‌سوکت
+        if (ws) ws.close();
+        ws = new WebSocket(`${wsProtocol}${window.location.host}/api/v1/support/ws?token=${adminToken}&target_user_id=${roomId}`);
+
+        ws.onmessage = function (event) {
+            const data = JSON.parse(event.data);
+            // 🔴 تبدیل قطعی به String برای جلوگیری از باگ عدم تطابق تایپ در جاوااسکریپت
+            if (String(data.sender_id) === String(currentRoomId)) {
+                appendMessage(data.content, 'user');
+                scrollToBottom();
+            }
+        };
+    }
+
+    function appendMessage(text, side) {
+        if (!text) return;
+        const msgArea = document.getElementById('msgArea');
+        if (!msgArea) return;
+        const row = document.createElement('div');
+        row.className = `msg-row ${side}`;
+        row.innerHTML = `<div class="msg-bubble">${text}</div>`;
+        msgArea.appendChild(row);
+    }
+
+    function sendMessage() {
+        const input = document.getElementById('msgInput');
+        const text = input.value.trim();
+        if (!text || !currentRoomId) return;
+
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+                content: text,
+                attachment_url: null,
+                attachment_type: null
+            }));
+
+            appendMessage(text, 'admin');
+            input.value = '';
+            scrollToBottom();
+        } else {
+            alert('ارتباط با سرور قطع شده است. در حال اتصال مجدد...');
+        }
+    }
+
+    function checkEnter(e) {
+        if (e.key === 'Enter') sendMessage();
+    }
+
+    function scrollToBottom() {
+        const area = document.getElementById('msgArea');
+        if (area) area.scrollTop = area.scrollHeight;
+    }
+</script>
+</body>
+</html>

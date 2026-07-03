@@ -2,11 +2,12 @@
 import os
 import uuid
 from markupsafe import Markup
-from sqladmin import Admin, ModelView
+from sqladmin import Admin, ModelView, BaseView, expose
 from sqladmin.authentication import AuthenticationBackend
 from starlette.requests import Request
 from starlette.datastructures import UploadFile, FormData
 from jose import jwt, JWTError
+from starlette.responses import JSONResponse
 
 from wtforms import FileField
 from wtforms.widgets import FileInput
@@ -49,7 +50,8 @@ class AdminAuth(AuthenticationBackend):
             user = db.query(User).filter(User.phone_number == phone_number).first()
             if user and verify_password(password, user.hashed_password):
                 if user.is_superuser:
-                    token = create_access_token(data={"sub": str(user.id), "is_superuser": True})
+                    # 🔴 اصلاح شد: ساخت توکن بر پایه شماره همراه جهت سازگاری ۱۰۰٪ با روترهای چت اپلیکیشن
+                    token = create_access_token(data={"sub": str(user.phone_number), "is_superuser": True})
                     request.session.update({"token": token})
                     return True
         finally:
@@ -117,15 +119,9 @@ class UserAdmin(ModelView, model=User):
     form_columns = ["full_name", "phone_number", "national_id", "is_active", "is_verified", "is_superuser", "roles"]
 
     column_labels = {
-        "id": "شناسه کاربر",
-        "full_name": "نام و نام خانوادگی",
-        "phone_number": "شماره تماس",
-        "national_id": "کد ملی",
-        "is_superuser": "مدیر کل (Superuser)",
-        "is_active": "وضعیت فعالیت",
-        "is_verified": "احراز هویت شده",
-        "created_at": "تاریخ ثبت‌نام",
-        "roles": "نقش‌های کاربری"
+        "id": "شناسه کاربر", "full_name": "نام و نام خانوادگی", "phone_number": "شماره تماس",
+        "national_id": "کد ملی", "is_superuser": "مدیر کل (Superuser)", "is_active": "وضعیت فعالیت",
+        "is_verified": "احراز هویت شده", "created_at": "تاریخ ثبت‌نام", "roles": "نقش‌های کاربری"
     }
 
 
@@ -461,12 +457,8 @@ class CourseReviewAdmin(ModelView, model=CourseReview):
     form_columns = ["is_approved"]
 
     column_labels = {
-        "id": "شناسه ردیف",
-        "course.title": "دوره آموزشی",
-        "user.full_name": "نام هنرجو",
-        "image_url": "عکس ارسالی هنرجو",
-        "is_approved": "وضعیت انتشار (تایید شده؟)",
-        "created_at": "تاریخ ارسال نظر"
+        "id": "شناسه ردیف", "course.title": "دوره آموزشی", "user.full_name": "نام هنرجو",
+        "image_url": "عکس ارسالی هنرجو", "is_approved": "وضعیت انتشار (تایید شده؟)", "created_at": "تاریخ ارسال نظر"
     }
 
     column_formatters = {
@@ -482,13 +474,9 @@ class CourseReviewAdmin(ModelView, model=CourseReview):
 
 
 # =========================================================================
-# پچ طلایی و نهایی برای جلوگیری از کرش کردن هسته SQLAdmin هنگام ویرایش فایل
+# پچ طلایی برای جلوگیری از کرش کردن هسته SQLAdmin هنگام ویرایش فایلی
 # =========================================================================
 def apply_sqladmin_patch():
-    """
-    این تابع متد باگ‌دار داخلی کتابخانه را بازنویسی می‌کند تا قبل از رسیدن دیتا
-    به کدهای فرم، رشته‌های متنی با فایل اشتباه گرفته نشوند.
-    """
     original_handle_form_data = Admin._handle_form_data
 
     async def safe_handle_form_data(self, request: Request, model):
@@ -512,6 +500,70 @@ def apply_sqladmin_patch():
 
 apply_sqladmin_patch()
 
+
+# =========================================================================
+# بخش دهم: داشبورد چت و ارتباط هوشمند زنده با هنرجویان (Custom BaseView)
+# =========================================================================
+class SupportChatDashboard(BaseView):
+    name = "اتاق چت آنلاین"
+    icon = "fa-solid fa-headset"
+
+    @expose("/support/live-chat", methods=["GET"])
+    async def support_chat_page(self, request: Request):
+        db = SessionLocal()
+        rooms = []
+        admin_token = request.session.get("token", "")
+
+        try:
+            distinct_rooms = db.query(SupportMessage.room_user_id).distinct().all()
+
+            for room in distinct_rooms:
+                room_id = room[0]
+                user = db.query(User).filter(User.id == room_id).first()
+                last_msg = db.query(SupportMessage).filter(
+                    SupportMessage.room_user_id == room_id
+                ).order_by(SupportMessage.created_at.desc()).first()
+
+                rooms.append({
+                    "id": room_id,
+                    "name": user.full_name if user else f"هنرجوی شماره {room_id}",
+                    "last_message": last_msg.content if last_msg else "فایلی ارسال شده است",
+                    "is_read": last_msg.is_read if last_msg else True
+                })
+        finally:
+            db.close()
+
+        return await self.templates.TemplateResponse(
+            request,
+            "admin_chat.html",
+            context={"rooms": rooms, "admin_token": admin_token}
+        )
+
+    # 🔴 مسیر جدید و اختصاصی برای گرفتن تاریخچه چت فقط برای ادمین پنل (بدون تداخل با اپلیکیشن)
+    @expose("/support/history/{user_id}", methods=["GET"])
+    def chat_history_api(self, request: Request):
+        # بررسی امنیت: فقط ادمینی که لاگین کرده اجازه دسترسی دارد
+        if not request.session.get("token"):
+            return JSONResponse({"detail": "Unauthorized"}, status_code=401)
+
+        user_id = int(request.path_params["user_id"])
+        db = SessionLocal()
+        try:
+            messages = db.query(SupportMessage).filter(
+                SupportMessage.room_user_id == user_id
+            ).order_by(SupportMessage.created_at.asc()).all()
+
+            history = []
+            for m in messages:
+                history.append({
+                    "id": m.id,
+                    "sender_id": m.sender_id,
+                    "content": m.content,
+                    "created_at": m.created_at.isoformat() if m.created_at else ""
+                })
+            return JSONResponse(history)
+        finally:
+            db.close()
 
 # =========================================================================
 # بخش پایانی: تابع تزریق و لود ساختار ادمین پنل
@@ -547,5 +599,6 @@ def init_admin(app):
     admin.add_view(HighlightCategoryAdmin)
     admin.add_view(HighlightItemAdmin)
     admin.add_view(CourseReviewAdmin)
+    admin.add_base_view(SupportChatDashboard)
 
     return admin
