@@ -15,13 +15,14 @@ from app.modules.courses.router import router as courses_router
 from app.modules.index.router import router as index_router
 from app.modules.orders.router import router as order_router
 from app.modules.support.router import router as support_router
+from app.modules.highlights.router import router as highlights_router
 
 from app.admin import init_admin
 
 os.makedirs("app/static/gallery", exist_ok=True)
 os.makedirs("app/static/courses/images", exist_ok=True)
 os.makedirs("app/static/courses/videos", exist_ok=True)
-
+os.makedirs("app/static/highlights", exist_ok=True)
 app = FastAPI(
     title="Royal Cake Academy API",
     description="Backend services for the Academy Mobile App and Website",
@@ -76,3 +77,4 @@ app.include_router(gallery_router, prefix="/api/v1/gallery", tags=["Gallery"])
 app.include_router(courses_router, prefix="/api/v1/courses", tags=["Courses"])
 app.include_router(order_router, prefix="/api/v1/orders", tags=["Orders"])
 app.include_router(support_router, prefix="/api/v1/support", tags=["Support Chat"])
+app.include_router(highlights_router, prefix="/api/v1/highlights", tags=["Highlights"])

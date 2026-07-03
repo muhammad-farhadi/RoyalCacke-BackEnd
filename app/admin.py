@@ -12,6 +12,8 @@ from jose import jwt, JWTError
 from wtforms import FileField
 from wtforms.widgets import FileInput
 
+from app.modules.highlights.models import HighlightItem, HighlightCategory
+
 # پچ کردن باگ WTForms روی پایتون 3.14 برای حل ارور BooleanInputWidget
 try:
     import wtforms.widgets.core
@@ -465,6 +467,97 @@ class SupportMessageAdmin(ModelView, model=SupportMessage):
 
 
 # =========================================================================
+# بخش هشتم: مدیریت هایلایت‌ها و استوری‌ها (ماژول Highlights با قابلیت آپلود)
+# =========================================================================
+UPLOAD_DIR = "app/static/highlights"
+
+
+class HighlightCategoryAdmin(ModelView, model=HighlightCategory):
+    name = "دسته هایلایت"
+    name_plural = "۱۷. دسته‌بندی‌های هایلایت"
+    icon = "fa-solid fa-folder-open"
+
+    column_list = ["id", "title", "created_at"]
+    form_columns = ["title", "cover_url"]
+
+    form_overrides = {
+        "cover_url": FileField
+    }
+    form_args = {"cover_url": {"widget": FileInput()}}
+
+    # 🔴 تغییر کلیدی: جایگزین کردن column_labels به جای form_labels برای فارسی‌سازی قطعی
+    column_labels = {
+        "id": "شناسه دسته",
+        "title": "عنوان هایلایت (مثلا: رضایت هنرجویان)",
+        "cover_url": "تصویر کاور دایره‌ای (Choose File)",
+        "created_at": "تاریخ ایجاد دسته"
+    }
+
+    async def on_model_change(self, data: dict, model: HighlightCategory, is_created: bool, request: Request) -> None:
+        if "cover_url" in data and data["cover_url"] is not None:
+            file_obj = data["cover_url"]
+            if hasattr(file_obj, "filename") and file_obj.filename:
+                ext = os.path.splitext(file_obj.filename)[1]
+                filename = f"category_{uuid.uuid4().hex}{ext}"
+                filepath = os.path.join(UPLOAD_DIR, filename)
+
+                content = await file_obj.read()
+                with open(filepath, "wb") as f:
+                    f.write(content)
+
+                data["cover_url"] = f"/static/highlights/{filename}"
+            else:
+                if not is_created:
+                    data.pop("cover_url", None)
+
+    def is_accessible(self, request: Request) -> bool:
+        return True
+
+
+class HighlightItemAdmin(ModelView, model=HighlightItem):
+    name = "عکس هایلایت"
+    name_plural = "۱۸. تصاویر داخل هایلایت‌ها"
+    icon = "fa-solid fa-image"
+
+    column_list = ["id", "category_id", "created_at"]
+    form_columns = ["category", "image_url"]
+
+    form_overrides = {
+        "image_url": FileField
+    }
+    form_args = {"image_url": {"widget": FileInput()}}
+
+    # 🔴 تغییر کلیدی: استفاده از کلمه استاندارد column_labels برای ترجمه هدرها و فرم آپلود
+    column_labels = {
+        "id": "شناسه تصویر",
+        "category_id": "شناسه دسته مادر",
+        "category": "انتخاب دسته مادر هایلایت",
+        "image_url": "تصویر اصلی استوری/هایلایت (Choose File)",
+        "created_at": "تاریخ بارگذاری تصویر"
+    }
+
+    async def on_model_change(self, data: dict, model: HighlightItem, is_created: bool, request: Request) -> None:
+        if "image_url" in data and data["image_url"] is not None:
+            file_obj = data["image_url"]
+            if hasattr(file_obj, "filename") and file_obj.filename:
+                ext = os.path.splitext(file_obj.filename)[1]
+                filename = f"item_{uuid.uuid4().hex}{ext}"
+                filepath = os.path.join(UPLOAD_DIR, filename)
+
+                content = await file_obj.read()
+                with open(filepath, "wb") as f:
+                    f.write(content)
+
+                data["image_url"] = f"/static/highlights/{filename}"
+            else:
+                if not is_created:
+                    data.pop("image_url", None)
+
+    def is_accessible(self, request: Request) -> bool:
+        return True
+
+
+# =========================================================================
 # بخش پایانی: تابع تزریق و لود ساختار ادمین پنل با MutationObserver هوشمند
 # =========================================================================
 def init_admin(app):
@@ -497,5 +590,7 @@ def init_admin(app):
     admin.add_view(GalleryItemAdmin)
     admin.add_view(ContactMessageAdmin)
     admin.add_view(SupportMessageAdmin)
+    admin.add_view(HighlightCategoryAdmin)
+    admin.add_view(HighlightItemAdmin)
 
     return admin
