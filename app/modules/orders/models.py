@@ -62,6 +62,7 @@ class Order(Base):
     items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
     payments = relationship("Payment", back_populates="order", cascade="all, delete-orphan")
     user = relationship("User")
+
     def __str__(self):
         return self.user_id
 
@@ -104,6 +105,8 @@ class Enrollment(Base):
     order_id = Column(Integer, ForeignKey("orders.id", ondelete="SET NULL"), nullable=True)
     purchased_price = Column(Integer, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-
+    # 🔴 این خط را به انتهای کلاس اضافه کنید تا دیتابیس مشتری را بشناسد
+    user = relationship("User")
+    
     def __str__(self):
         return self.user_id

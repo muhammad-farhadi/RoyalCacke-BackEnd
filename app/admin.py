@@ -436,12 +436,32 @@ class EnrollmentAdmin(ModelView, model=Enrollment):
     name = "دسترسی"
     name_plural = "۱۰. دسترسی‌های دانشجویان"
     icon = "fa-solid fa-id-card"
-    column_formatters = {Enrollment.created_at: lambda m, a: to_shamsi(m.created_at)}
-    column_formatters_detail = {Enrollment.created_at: lambda m, a: to_shamsi(m.created_at)}
-    column_list = ["id", "user_id", "course_id", "purchased_price", "created_at"]
-    column_searchable_list = ["user_id", "course_id"]
-    column_labels = {"id": "شناسه", "user_id": "دانشجو", "course_id": "دوره آموزشی", "purchased_price": "مبلغ خرید",
-                     "created_at": "تاریخ دسترسی"}
+
+    # 🔴 تغییر ۱: نمایش شماره موبایل در جدول
+    column_list = ["id", "user.phone_number", "course_id", "purchased_price", "created_at"]
+
+    # 🔴 تغییر ۲: امکان جستجو بر اساس شماره موبایل و نام دانشجو
+    column_searchable_list = ["id", "user.phone_number", "user.full_name", "course_id"]
+
+    # 🔴 تغییر ۳: منوی کشویی برای انتخاب نام کاربری هنگام ایجاد دسترسی دستی
+    form_columns = ["user", "course_id", "purchased_price"]
+
+    column_labels = {
+        "id": "شناسه",
+        "user": "انتخاب دانشجو",
+        "user.phone_number": "موبایل دانشجو",
+        "course_id": "شناسه دوره",
+        "purchased_price": "مبلغ خرید",
+        "created_at": "تاریخ دسترسی"
+    }
+
+    # حفظ تاریخ شمسی از مرحله قبل
+    column_formatters = {
+        Enrollment.created_at: lambda m, a: to_shamsi(m.created_at)
+    }
+    column_formatters_detail = {
+        Enrollment.created_at: lambda m, a: to_shamsi(m.created_at)
+    }
 
 
 # =========================================================================
