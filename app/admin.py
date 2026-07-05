@@ -323,13 +323,25 @@ class OrderAdmin(ModelView, model=Order):
     name = "سفارش"
     name_plural = "۶. فاکتورهای سفارشات"
     icon = "fa-solid fa-file-invoice-dollar"
-    column_list = ["id", "user_id", "original_amount", "discount_amount", "total_amount", "status", "created_at"]
-    column_searchable_list = ["id", "user_id"]
-    form_columns = ["user_id", "original_amount", "discount_amount", "total_amount", "discount_id", "status"]
+
+    # 🔴 تغییر ۱: کلمه user_id به user تغییر کرد
+    column_list = ["id", "user.phone_number", "original_amount", "discount_amount", "total_amount", "status",
+                   "created_at"]
+    # 🔴 تغییر ۲: حالا می‌توانید علاوه بر شماره فاکتور، بر اساس "نام مشتری" و "شماره تماس" هم در پنل سرچ کنید!
+    column_searchable_list = ["id", "user.full_name", "user.phone_number"]
+
+    # 🔴 تغییر ۳: در فرم ایجاد/ویرایش فاکتور هم user_id به user تغییر کرد تا منوی کشویی نام‌ها باز شود
+    form_columns = ["user", "original_amount", "discount_amount", "total_amount", "discount_id", "status"]
     column_labels = {
-        "id": "شماره فاکتور", "user_id": "مشتری", "original_amount": "مبلغ پایه",
-        "discount_amount": "تخفیف", "total_amount": "مبلغ نهایی", "discount_id": "کد تخفیف",
-        "status": "وضعیت پرداخت", "created_at": "تاریخ صدور"
+        "id": "شماره فاکتور",
+        "user": "انتخاب مشتری",  # این لیبل برای فرم افزودن/ویرایش است
+        "user.phone_number": "شماره موبایل مشتری",  # 🔴 این لیبل برای جدول لیست سفارشات است
+        "original_amount": "مبلغ پایه",
+        "discount_amount": "تخفیف",
+        "total_amount": "مبلغ نهایی",
+        "discount_id": "کد تخفیف",
+        "status": "وضعیت پرداخت",
+        "created_at": "تاریخ صدور"
     }
 
 

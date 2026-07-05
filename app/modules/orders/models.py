@@ -61,7 +61,7 @@ class Order(Base):
 
     items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
     payments = relationship("Payment", back_populates="order", cascade="all, delete-orphan")
-
+    user = relationship("User")
     def __str__(self):
         return self.user_id
 
