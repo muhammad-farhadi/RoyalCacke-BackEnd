@@ -12,7 +12,8 @@ import jdatetime
 from datetime import datetime
 from wtforms import FileField
 from wtforms.widgets import FileInput
-
+# این خط را پیدا کنید و get_password_hash را به آن اضافه کنید:
+from app.core.security import verify_password, create_access_token, SECRET_KEY, ALGORITHM, get_password_hash
 from app.modules.highlights.models import HighlightItem, HighlightCategory
 
 # پچ کردن باگ WTForms روی پایتون 3.14 برای حل ارور BooleanInputWidget
@@ -218,7 +219,7 @@ class UserAdmin(ModelView, model=User):
     name = "کاربر"
     name_plural = "۱. کاربران سیستم"
     icon = "fa-solid fa-users"
-
+    list_template = "custom_list.html"
     column_formatters = {User.created_at: lambda m, a: to_shamsi(m.created_at)}
     column_formatters_detail = {User.created_at: lambda m, a: to_shamsi(m.created_at)}
     column_list = ["id", "full_name", "phone_number", "national_id", "is_superuser", "is_active", "is_verified",
@@ -231,6 +232,14 @@ class UserAdmin(ModelView, model=User):
         "national_id": "کد ملی", "is_superuser": "مدیر کل (Superuser)", "is_active": "وضعیت فعالیت",
         "is_verified": "احراز هویت شده", "created_at": "تاریخ ثبت‌نام", "roles": "نقش‌های کاربری"
     }
+
+    # 🔴 این بلاک را به انتهای کلاس اضافه کنید
+    async def on_model_change(self, data: dict, model: Any, is_created: bool, request: Request) -> None:
+        if is_created:
+            # اگر کاربر جدید در حال ساخته شدن است و رمز عبوری ندارد:
+            # شماره موبایلش را می‌گیریم و به عنوان رمز عبور هش‌شده ذخیره می‌کنیم
+            phone = data.get("phone_number", "12345678")
+            data["hashed_password"] = get_password_hash(phone)
 
 
 class RoleAdmin(ModelView, model=Role):
@@ -265,6 +274,7 @@ class CourseAdmin(ModelView, model=Course):
     name = "دوره"
     name_plural = "۴. دوره‌های آکادمی"
     icon = "fa-solid fa-graduation-cap"
+    list_template = "custom_list.html"
 
     column_list = ["id", "title", "price", "category", "session_count", "total_hours", "is_published"]
     column_searchable_list = ["title", "category"]
@@ -298,6 +308,7 @@ class LessonAdmin(ModelView, model=Lesson):
     name = "جلسه"
     name_plural = "۵. ویدیوها و جلسات دوره‌ها"
     icon = "fa-solid fa-video"
+    list_template = "custom_list.html"
 
     column_list = ["id", "course", "title", "duration", "sort_order", "is_free", "created_at"]
     column_searchable_list = ["title"]
@@ -358,8 +369,8 @@ class LessonAdmin(ModelView, model=Lesson):
 class OrderAdmin(ModelView, model=Order):
     name = "سفارش"
     name_plural = "۶. فاکتورهای سفارشات"
+    list_template = "custom_list.html"
     icon = "fa-solid fa-file-invoice-dollar"
-
     # 🔴 تغییر ۱: کلمه user_id به user تغییر کرد
     column_list = ["id", "user.phone_number", "original_amount", "discount_amount", "total_amount", "status",
                    "created_at"]
@@ -393,6 +404,7 @@ class OrderAdmin(ModelView, model=Order):
 class OrderItemAdmin(ModelView, model=OrderItem):
     name = "آیتم فاکتور"
     name_plural = "۷. اقلام ریز فاکتورها"
+    list_template = "custom_list.html"
     icon = "fa-solid fa-box-open"
     column_list = ["id", "order_id", "course_id", "price"]
     form_columns = ["order_id", "course_id", "price"]
@@ -403,6 +415,7 @@ class PaymentAdmin(ModelView, model=Payment):
     name = "تراکنش"
     name_plural = "۸. تراکنش‌های بانکی"
     icon = "fa-solid fa-credit-card"
+    list_template = "custom_list.html"
     column_formatters = {
         Payment.created_at: lambda m, a: to_shamsi(m.created_at),
         Payment.status: lambda m, a: translate_status(m.status)  # 🔴 اضافه شدن فرمت وضعیت
@@ -423,6 +436,7 @@ class PaymentAdmin(ModelView, model=Payment):
 class DiscountAdmin(ModelView, model=Discount):
     name = "کد تخفیف"
     name_plural = "۹. کدهای تخفیف"
+    list_template = "custom_list.html"
     icon = "fa-solid fa-percent"
     column_list = ["id", "code", "percent", "usage_limit", "used_count", "is_active", "valid_until"]
     column_searchable_list = ["code"]
@@ -436,6 +450,7 @@ class EnrollmentAdmin(ModelView, model=Enrollment):
     name = "دسترسی"
     name_plural = "۱۰. دسترسی‌های دانشجویان"
     icon = "fa-solid fa-id-card"
+    list_template = "custom_list.html"
 
     # 🔴 تغییر ۱: نمایش شماره موبایل در جدول
     column_list = ["id", "user.phone_number", "course_id", "purchased_price", "created_at"]
@@ -470,6 +485,7 @@ class EnrollmentAdmin(ModelView, model=Enrollment):
 class CartAdmin(ModelView, model=Cart):
     name = "سبد خرید"
     name_plural = "۱۱. سبدهای موقت"
+    list_template = "custom_list.html"
     icon = "fa-solid fa-shopping-cart"
     column_list = ["id", "user_id"]
     column_labels = {"id": "شناسه سبد", "user_id": "صاحب سبد"}
@@ -478,6 +494,7 @@ class CartAdmin(ModelView, model=Cart):
 class CartItemAdmin(ModelView, model=CartItem):
     name = "آیتم سبد"
     name_plural = "۱۲. اقلام سبد خرید"
+    list_template = "custom_list.html"
     icon = "fa-solid fa-cart-arrow-down"
     column_list = ["id", "cart_id", "course_id"]
     column_labels = {"id": "ردیف", "cart_id": "سبد خرید", "course_id": "دوره"}
@@ -489,6 +506,7 @@ class CartItemAdmin(ModelView, model=CartItem):
 class ArticleAdmin(ModelView, model=Article):
     name = "مقاله"
     name_plural = "۱۳. مقالات وبلاگ"
+    list_template = "custom_list.html"
     icon = "fa-solid fa-newspaper"
     column_formatters = {Article.created_at: lambda m, a: to_shamsi(m.created_at)}
     column_formatters_detail = {Article.created_at: lambda m, a: to_shamsi(m.created_at)}
@@ -521,6 +539,7 @@ class ArticleAdmin(ModelView, model=Article):
 class GalleryItemAdmin(ModelView, model=GalleryItem):
     name = "تصویر گالری"
     name_plural = "۱۴. گالری نمونه‌کارها"
+    list_template = "custom_list.html"
     icon = "fa-solid fa-images"
     column_formatters = {GalleryItem.created_at: lambda m, a: to_shamsi(m.created_at)}
     column_formatters_detail = {GalleryItem.created_at: lambda m, a: to_shamsi(m.created_at)}
@@ -552,6 +571,7 @@ class GalleryItemAdmin(ModelView, model=GalleryItem):
 class ContactMessageAdmin(ModelView, model=ContactMessage):
     name = "پیام فرم تماس"
     name_plural = "۱۵. پیام‌های تماس با ما"
+    list_template = "custom_list.html"
     icon = "fa-solid fa-envelope-open-text"
     column_list = ["id", "name", "phone_number", "message", "created_at"]
     column_formatters = {ContactMessage.created_at: lambda m, a: to_shamsi(m.created_at)}
@@ -564,6 +584,7 @@ class ContactMessageAdmin(ModelView, model=ContactMessage):
 class SupportMessageAdmin(ModelView, model=SupportMessage):
     name = "پیام چت"
     name_plural = "۱۶. پیام‌های پشتیبانی زنده"
+    list_template = "custom_list.html"
     icon = "fa-solid fa-comments"
     column_list = ["id", "room_user_id", "sender_id", "content", "is_read", "created_at"]
     column_formatters = {SupportMessage.created_at: lambda m, a: to_shamsi(m.created_at)}
@@ -580,7 +601,7 @@ class HighlightCategoryAdmin(ModelView, model=HighlightCategory):
     name = "دسته هایلایت"
     name_plural = "۱۷. دسته‌های هایلایت"
     icon = "fa-solid fa-folder-open"
-
+    list_template = "custom_list.html"
     column_list = ["id", "title", "created_at"]
     column_formatters = {HighlightCategory.created_at: lambda m, a: to_shamsi(m.created_at)}
     column_formatters_detail = {HighlightCategory.created_at: lambda m, a: to_shamsi(m.created_at)}
@@ -612,6 +633,7 @@ class HighlightItemAdmin(ModelView, model=HighlightItem):
     name = "عکس هایلایت"
     name_plural = "۱۸. تصاویر هایلایت‌ها"
     icon = "fa-solid fa-image"
+    list_template = "custom_list.html"
 
     column_list = ["id", "category_id", "created_at"]
     column_formatters = {HighlightItem.created_at: lambda m, a: to_shamsi(m.created_at)}
@@ -647,6 +669,7 @@ class CourseReviewAdmin(ModelView, model=CourseReview):
     name = "نظر دوره"
     name_plural = "۱۹. نظرات دوره‌های آموزشی"
     icon = "fa-solid fa-comment-dots"
+    list_template = "custom_list.html"
 
     column_list = ["id", "course.title", "user.full_name", "image_url", "is_approved", "created_at"]
     form_columns = ["is_approved"]
@@ -676,11 +699,14 @@ class CourseReviewAdmin(ModelView, model=CourseReview):
 # =========================================================================
 # پچ طلایی برای جلوگیری از کرش کردن هسته SQLAdmin هنگام ویرایش فایلی
 # =========================================================================
+# =========================================================================
+# پچ طلایی برای جلوگیری از کرش کردن هسته SQLAdmin هنگام ویرایش فایلی
+# =========================================================================
 def apply_sqladmin_patch():
     original_handle_form_data = Admin._handle_form_data
 
-    # 🔴 کلمه model از ورودی‌های این تابع حذف شد
-    async def safe_handle_form_data(self, request: Request):
+    # 🔴 با اضافه شدن *args و **kwargs، تابع هم با ۱ ورودی (ایجاد) و هم با ۲ ورودی (ویرایش) کار می‌کند
+    async def safe_handle_form_data(self, request: Request, *args, **kwargs):
         form = await request.form()
         new_data = []
         for k, v in form.multi_items():
