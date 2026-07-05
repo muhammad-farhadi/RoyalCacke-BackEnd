@@ -1,0 +1,74 @@
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const forms = document.querySelectorAll('form[enctype="multipart/form-data"]');
+
+    forms.forEach(form => {
+        form.addEventListener("submit", function(e) {
+            const fileInputs = form.querySelectorAll('input[type="file"]');
+            let hasFile = false;
+            fileInputs.forEach(inp => { if(inp.files.length > 0) hasFile = true; });
+
+            if(hasFile) {
+                e.preventDefault();
+
+                let overlay = document.createElement("div");
+                overlay.id = "upload-progress-overlay";
+                overlay.style.cssText = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-family: Tahoma, Arial, sans-serif; backdrop-filter: blur(5px);";
+
+                let box = document.createElement("div");
+                box.style.cssText = "background: #fff; padding: 30px; border-radius: 12px; text-align: center; width: 90%; max-width: 500px; color: #333; box-shadow: 0 10px 25px rgba(0,0,0,0.5);";
+
+                let title = document.createElement("h3");
+                title.innerText = "در حال آپلود فایل... لطفاً صفحه را نبندید";
+                title.style.margin = "0 0 20px 0";
+
+                let barBg = document.createElement("div");
+                barBg.style.cssText = "width: 100%; height: 25px; background: #eee; border-radius: 12px; overflow: hidden; position: relative;";
+
+                let barFill = document.createElement("div");
+                barFill.id = "upload-progress-fill";
+                barFill.style.cssText = "width: 0%; height: 100%; background: #206bc4; transition: width 0.2s; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;";
+                barFill.innerText = "0%";
+
+                barBg.appendChild(barFill);
+                box.appendChild(title);
+                box.appendChild(barBg);
+                overlay.appendChild(box);
+                document.body.appendChild(overlay);
+
+                const xhr = new XMLHttpRequest();
+                xhr.open(form.method, form.action);
+
+                xhr.upload.onprogress = function(event) {
+                    if (event.lengthComputable) {
+                        let percent = Math.round((event.loaded / event.total) * 100);
+                        barFill.style.width = percent + "%";
+                        barFill.innerText = percent + "%";
+                    }
+                };
+
+                xhr.onload = function() {
+                    if (xhr.status >= 200 && xhr.status < 400) {
+                        title.innerText = "آپلود با موفقیت انجام شد!";
+                        barFill.style.background = "#2fb344";
+                        setTimeout(() => {
+                            window.location.href = xhr.responseURL || window.location.href;
+                        }, 500);
+                    } else {
+                        alert("متاسفانه خطایی در سرور رخ داد! (کد " + xhr.status + ")");
+                        overlay.remove();
+                    }
+                };
+
+                xhr.onerror = function() {
+                    alert("ارتباط با سرور قطع شد. وضعیت اینترنت را بررسی کنید.");
+                    overlay.remove();
+                };
+
+                const formData = new FormData(form);
+                xhr.send(formData);
+            }
+        });
+    });
+});
+</script>

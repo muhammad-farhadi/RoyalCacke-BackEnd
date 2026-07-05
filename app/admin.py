@@ -6,7 +6,7 @@ from sqladmin import Admin, ModelView, BaseView, expose
 from sqladmin.authentication import AuthenticationBackend
 from starlette.requests import Request
 from starlette.datastructures import UploadFile, FormData
-from jose import jwt, JWTError
+from jose import jwt, JWTError, ExpiredSignatureError
 from starlette.responses import JSONResponse
 
 from wtforms import FileField
@@ -24,7 +24,7 @@ except Exception:
     pass
 
 from app.core.database import engine, SessionLocal
-from app.core.security import verify_password, create_access_token, SECRET_KEY, ALGORITHM
+from app.core.security import verify_password, create_access_token, SECRET_KEY, ALGORITHM, create_refresh_token
 
 # ایمپورت تمامی مدل‌های پروژه شما
 from app.modules.users.models import User, Role, Permission
@@ -34,6 +34,47 @@ from app.modules.gallery.models import GalleryItem
 from app.modules.index.models import ContactMessage
 from app.modules.orders.models import Cart, CartItem, Discount, Order, OrderItem, Payment, Enrollment
 from app.modules.support.models import SupportMessage
+
+# این ایمپورت‌ها را به بالای فایل admin.py اضافه کنید
+import os
+import time
+import uuid
+import asyncio
+import subprocess
+
+# مسیر امن ذخیره ویدیوها (همان مسیری که در روتر داشتید)
+PRIVATE_VIDEO_DIR = "app/private_assets/courses/videos"
+os.makedirs(PRIVATE_VIDEO_DIR, exist_ok=True)
+
+
+# تابع تبدیل ویدیو به HLS (دقیقاً مشابه روتر شما)
+def process_video_to_hls(input_video_path: str, output_dir: str):
+    playlist_path = os.path.join(output_dir, "playlist.m3u8")
+    segment_path = os.path.join(output_dir, "segment_%03d.ts")
+
+    command = [
+        "ffmpeg",
+        "-i", input_video_path,
+        "-profile:v", "baseline",
+        "-level", "3.0",
+        "-start_number", "0",
+        "-hls_time", "10",
+        "-hls_list_size", "0",
+        "-hls_playlist_type", "vod",
+        "-f", "hls",
+        "-hls_segment_filename", segment_path,
+        playlist_path
+    ]
+
+    try:
+        subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # پاک کردن فایل حجیم mp4 پس از تبدیل موفق
+        if os.path.exists(input_video_path):
+            os.remove(input_video_path)
+        print(f"✅ تبدیل ویدیو با موفقیت تمام شد: {output_dir}")
+    except subprocess.CalledProcessError as e:
+        error_msg = e.stderr.decode()
+        print(f"❌ خطا در تبدیل ویدیو به HLS: {error_msg}")
 
 
 # =========================================================================
@@ -50,9 +91,16 @@ class AdminAuth(AuthenticationBackend):
             user = db.query(User).filter(User.phone_number == phone_number).first()
             if user and verify_password(password, user.hashed_password):
                 if user.is_superuser:
-                    # 🔴 اصلاح شد: ساخت توکن بر پایه شماره همراه جهت سازگاری ۱۰۰٪ با روترهای چت اپلیکیشن
-                    token = create_access_token(data={"sub": str(user.phone_number), "is_superuser": True})
-                    request.session.update({"token": token})
+                    # ساخت اکسس توکن و رفرش توکن
+                    payload_data = {"sub": str(user.phone_number), "is_superuser": True}
+                    token = create_access_token(data=payload_data)
+                    refresh_token = create_refresh_token(data=payload_data)
+
+                    # ذخیره هر دو توکن در سشن ادمین پنل
+                    request.session.update({
+                        "token": token,
+                        "refresh_token": refresh_token
+                    })
                     return True
         finally:
             db.close()
@@ -65,14 +113,43 @@ class AdminAuth(AuthenticationBackend):
 
     async def authenticate(self, request: Request) -> bool:
         token = request.session.get("token")
+        refresh_token = request.session.get("refresh_token")
+
         if not token:
             return False
 
         try:
+            # ۱. اول سعی می‌کنیم اکسس توکن فعلی را دیکود کنیم
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
             if payload.get("is_superuser") is True:
                 return True
+
+        except ExpiredSignatureError:
+            # ۲. اگر اکسس توکن باطل شده بود (ارور Expired)، سراغ رفرش توکن می‌رویم
+            if not refresh_token:
+                return False
+
+            try:
+                # بررسی می‌کنیم که آیا رفرش توکن هنوز معتبر است یا خیر
+                refresh_payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+
+                if refresh_payload.get("is_superuser") is True:
+                    # ۳. ساخت اکسس توکن جدید با اطلاعات داخل رفرش توکن
+                    new_token = create_access_token(
+                        data={"sub": refresh_payload.get("sub"), "is_superuser": True}
+                    )
+
+                    # ۴. آپدیت سشن با اکسس توکن جدید (کاربر متوجه قطعی نمیشود و لاگین می‌ماند)
+                    request.session.update({"token": new_token})
+                    return True
+
+            except JWTError:
+                # اگر رفرش توکن هم باطل شده بود، کلا میندازیمش بیرون تا دوباره لاگین کنه
+                request.session.clear()
+                return False
+
         except JWTError:
+            # برای سایر ارورهای مربوط به توکن (مثلا توکن دستکاری شده)
             return False
 
         return False
@@ -84,12 +161,11 @@ authentication_backend = AdminAuth(secret_key="secure-session-key-for-royal-cake
 # =========================================================================
 # تابع کمکی برای ذخیره فیزیکی فایل‌های آپلود شده روی هارد سرور
 # =========================================================================
+# =========================================================================
+# تابع کمکی برای ذخیره فیزیکی فایل‌های آپلود شده روی هارد سرور
+# =========================================================================
 async def save_uploaded_file(upload_file: UploadFile, folder_name: str) -> str | None:
     if not upload_file or not hasattr(upload_file, "filename") or not upload_file.filename:
-        return None
-
-    content = await upload_file.read()
-    if not content:
         return None
 
     base_dir = f"app/static/{folder_name}"
@@ -99,8 +175,10 @@ async def save_uploaded_file(upload_file: UploadFile, folder_name: str) -> str |
     unique_filename = f"{uuid.uuid4().hex}{ext}"
     file_path = os.path.join(base_dir, unique_filename)
 
+    # 🔴 آپدیت مهم برای فایل‌های حجیم (ویدیو): ذخیره یک مگابایت به یک مگابایت
     with open(file_path, "wb") as f:
-        f.write(content)
+        while chunk := await upload_file.read(1024 * 1024):
+            f.write(chunk)
 
     return f"/static/{folder_name}/{unique_filename}"
 
@@ -191,30 +269,50 @@ class LessonAdmin(ModelView, model=Lesson):
     name_plural = "۵. ویدیوها و جلسات دوره‌ها"
     icon = "fa-solid fa-video"
 
-    column_list = ["id", "course_id", "title", "duration", "sort_order", "is_free", "created_at"]
+    column_list = ["id", "course", "title", "duration", "sort_order", "is_free", "created_at"]
     column_searchable_list = ["title"]
-    form_columns = ["course_id", "title", "description", "video_url", "duration", "sort_order", "is_free"]
+    form_columns = ["course", "title", "description", "video_url", "duration", "sort_order", "is_free"]
 
     form_overrides = {"video_url": FileField}
     form_args = {"video_url": {"widget": FileInput()}}
 
+    # برای اضافه شدن نوار پیشرفت (پروگرس بار مرحله قبل)
+    create_template = "custom_create.html"
+    edit_template = "custom_edit.html"
+
     column_labels = {
-        "id": "شناسه ویدیو", "course_id": "دوره آموزشی مرتبط", "title": "عنوان این جلسه",
-        "description": "خلاصه توضیحات جلسه", "video_url": "آپلود فایل ویدیو (MP4/HLS)",
+        "id": "شناسه ویدیو", "course": "دوره آموزشی مرتبط", "title": "عنوان این جلسه",
+        "description": "خلاصه توضیحات جلسه", "video_url": "آپلود فایل ویدیو (MP4)",
         "duration": "مدت زمان (دقیقه)", "sort_order": "شماره قسمت", "is_free": "قسمت معرفی (رایگان)",
         "created_at": "تاریخ ثبت"
     }
 
-    async def on_model_change(self, data: dict, model: Lesson, is_created: bool, request: Request) -> None:
+    async def on_model_change(self, data: dict, model: Any, is_created: bool, request: Request) -> None:
         if "video_url" in data:
             val = data["video_url"]
-            if isinstance(val, UploadFile) and val.filename:
-                file_path = await save_uploaded_file(val, "courses/videos")
-                if file_path:
-                    data["video_url"] = file_path
-                else:
-                    data.pop("video_url", None)
+            if hasattr(val, "filename") and val.filename:
+                # 🔴 ۱. ساخت نام پوشه یکتا برای این درس
+                folder_name = f"lesson_{int(time.time())}_{uuid.uuid4().hex[:6]}"
+                lesson_dir = os.path.join(PRIVATE_VIDEO_DIR, folder_name)
+                os.makedirs(lesson_dir, exist_ok=True)
+
+                temp_video_path = os.path.join(lesson_dir, "raw_video.mp4")
+
+                # 🔴 ۲. ذخیره فایل خام (mp4) به صورت تکه‌تکه در پوشه private
+                with open(temp_video_path, "wb") as f:
+                    while chunk := await val.read(1024 * 1024):
+                        f.write(chunk)
+
+                # 🔴 ۳. ذخیره اسم "پوشه" در دیتابیس به جای کل مسیر (برای سازگاری با روتر اپلیکیشن)
+                data["video_url"] = folder_name
+
+                # 🔴 ۴. ارسال عملیات سنگین FFmpeg به پس‌زمینه (Background Thread)
+                # با این کار پنل ادمین فوراً ذخیره می‌شود و ویدیو در بک‌گراند کانورت می‌شود
+                loop = asyncio.get_running_loop()
+                loop.run_in_executor(None, process_video_to_hls, temp_video_path, lesson_dir)
+
             else:
+                # در صورت ویرایش درس و عدم آپلود ویدیوی جدید، مقدار قبلی دیتابیس دست نخورده بماند
                 data.pop("video_url", None)
 
 
@@ -479,7 +577,8 @@ class CourseReviewAdmin(ModelView, model=CourseReview):
 def apply_sqladmin_patch():
     original_handle_form_data = Admin._handle_form_data
 
-    async def safe_handle_form_data(self, request: Request, model):
+    # 🔴 کلمه model از ورودی‌های این تابع حذف شد
+    async def safe_handle_form_data(self, request: Request):
         form = await request.form()
         new_data = []
         for k, v in form.multi_items():
