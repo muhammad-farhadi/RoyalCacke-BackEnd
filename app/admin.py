@@ -59,6 +59,22 @@ def to_shamsi(dt_obj):
     return j_date.strftime("%Y/%m/%d - %H:%M")
 
 
+STATUS_FA = {
+    "pending": "در انتظار پرداخت",
+    "completed": "تکمیل شده",
+    "paid": "پرداخت موفق",
+    "failed": "پرداخت ناموفق",
+    "canceled": "لغو شده"
+}
+
+
+def translate_status(status_en):
+    if not status_en:
+        return "-"
+    # اگر کلمه در دیکشنری بود ترجمه میکند، وگرنه همان کلمه انگلیسی را نشان میدهد
+    return STATUS_FA.get(status_en.lower(), status_en)
+
+
 # تابع تبدیل ویدیو به HLS (دقیقاً مشابه روتر شما)
 def process_video_to_hls(input_video_path: str, output_dir: str):
     playlist_path = os.path.join(output_dir, "playlist.m3u8")
@@ -347,17 +363,18 @@ class OrderAdmin(ModelView, model=Order):
     # 🔴 تغییر ۱: کلمه user_id به user تغییر کرد
     column_list = ["id", "user.phone_number", "original_amount", "discount_amount", "total_amount", "status",
                    "created_at"]
+
+    column_formatters = {
+        Order.created_at: lambda m, a: to_shamsi(m.created_at),
+        Order.status: lambda m, a: translate_status(m.status)  # 🔴 اضافه شدن فرمت وضعیت
+    }
+
+    column_formatters_detail = {
+        Order.created_at: lambda m, a: to_shamsi(m.created_at),
+        Order.status: lambda m, a: translate_status(m.status)  # 🔴 اضافه شدن فرمت وضعیت
+    }
     # 🔴 تغییر ۲: حالا می‌توانید علاوه بر شماره فاکتور، بر اساس "نام مشتری" و "شماره تماس" هم در پنل سرچ کنید!
     column_searchable_list = ["id", "user.full_name", "user.phone_number"]
-
-    # 🔴 این دو بخش اضافه می‌شوند تا تاریخ‌ها شمسی شوند:
-    column_formatters = {
-        Order.created_at: lambda m, a: to_shamsi(m.created_at)
-    }
-    column_formatters_detail = {
-        Order.created_at: lambda m, a: to_shamsi(m.created_at)
-    }
-
     # 🔴 تغییر ۳: در فرم ایجاد/ویرایش فاکتور هم user_id به user تغییر کرد تا منوی کشویی نام‌ها باز شود
     form_columns = ["user", "original_amount", "discount_amount", "total_amount", "discount_id", "status"]
     column_labels = {
@@ -386,8 +403,14 @@ class PaymentAdmin(ModelView, model=Payment):
     name = "تراکنش"
     name_plural = "۸. تراکنش‌های بانکی"
     icon = "fa-solid fa-credit-card"
-    column_formatters = {Payment.created_at: lambda m, a: to_shamsi(m.created_at)}
-    column_formatters_detail = {Payment.created_at: lambda m, a: to_shamsi(m.created_at)}
+    column_formatters = {
+        Payment.created_at: lambda m, a: to_shamsi(m.created_at),
+        Payment.status: lambda m, a: translate_status(m.status)  # 🔴 اضافه شدن فرمت وضعیت
+    }
+    column_formatters_detail = {
+        Payment.created_at: lambda m, a: to_shamsi(m.created_at),
+        Payment.status: lambda m, a: translate_status(m.status)  # 🔴 اضافه شدن فرمت وضعیت
+    }
     column_list = ["id", "order_id", "amount", "gateway", "authority", "ref_id", "status", "created_at"]
     column_searchable_list = ["authority", "ref_id", "order_id"]
     column_labels = {
