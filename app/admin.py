@@ -8,7 +8,8 @@ from starlette.requests import Request
 from starlette.datastructures import UploadFile, FormData
 from jose import jwt, JWTError, ExpiredSignatureError
 from starlette.responses import JSONResponse
-
+import jdatetime
+from datetime import datetime
 from wtforms import FileField
 from wtforms.widgets import FileInput
 
@@ -45,6 +46,17 @@ import subprocess
 # مسیر امن ذخیره ویدیوها (همان مسیری که در روتر داشتید)
 PRIVATE_VIDEO_DIR = "app/private_assets/courses/videos"
 os.makedirs(PRIVATE_VIDEO_DIR, exist_ok=True)
+
+
+# =========================================================================
+# تابع کمکی برای تبدیل تاریخ میلادی دیتابیس به شمسی برای نمایش در پنل
+# =========================================================================
+def to_shamsi(dt_obj):
+    if not dt_obj or not isinstance(dt_obj, datetime):
+        return "-"
+    # تبدیل تاریخ به شمسی و فرمت‌بندی به شکل (سال/ماه/روز ساعت:دقیقه)
+    j_date = jdatetime.datetime.fromgregorian(datetime=dt_obj)
+    return j_date.strftime("%Y/%m/%d - %H:%M")
 
 
 # تابع تبدیل ویدیو به HLS (دقیقاً مشابه روتر شما)
@@ -191,6 +203,8 @@ class UserAdmin(ModelView, model=User):
     name_plural = "۱. کاربران سیستم"
     icon = "fa-solid fa-users"
 
+    column_formatters = {User.created_at: lambda m, a: to_shamsi(m.created_at)}
+    column_formatters_detail = {User.created_at: lambda m, a: to_shamsi(m.created_at)}
     column_list = ["id", "full_name", "phone_number", "national_id", "is_superuser", "is_active", "is_verified",
                    "created_at"]
     column_searchable_list = ["full_name", "phone_number", "national_id"]
@@ -272,7 +286,13 @@ class LessonAdmin(ModelView, model=Lesson):
     column_list = ["id", "course", "title", "duration", "sort_order", "is_free", "created_at"]
     column_searchable_list = ["title"]
     form_columns = ["course", "title", "description", "video_url", "duration", "sort_order", "is_free"]
-
+    # 🔴 برای بخش جلسات:
+    column_formatters = {
+        Lesson.created_at: lambda m, a: to_shamsi(m.created_at)
+    }
+    column_formatters_detail = {
+        Lesson.created_at: lambda m, a: to_shamsi(m.created_at)
+    }
     form_overrides = {"video_url": FileField}
     form_args = {"video_url": {"widget": FileInput()}}
 
@@ -330,6 +350,14 @@ class OrderAdmin(ModelView, model=Order):
     # 🔴 تغییر ۲: حالا می‌توانید علاوه بر شماره فاکتور، بر اساس "نام مشتری" و "شماره تماس" هم در پنل سرچ کنید!
     column_searchable_list = ["id", "user.full_name", "user.phone_number"]
 
+    # 🔴 این دو بخش اضافه می‌شوند تا تاریخ‌ها شمسی شوند:
+    column_formatters = {
+        Order.created_at: lambda m, a: to_shamsi(m.created_at)
+    }
+    column_formatters_detail = {
+        Order.created_at: lambda m, a: to_shamsi(m.created_at)
+    }
+
     # 🔴 تغییر ۳: در فرم ایجاد/ویرایش فاکتور هم user_id به user تغییر کرد تا منوی کشویی نام‌ها باز شود
     form_columns = ["user", "original_amount", "discount_amount", "total_amount", "discount_id", "status"]
     column_labels = {
@@ -358,6 +386,8 @@ class PaymentAdmin(ModelView, model=Payment):
     name = "تراکنش"
     name_plural = "۸. تراکنش‌های بانکی"
     icon = "fa-solid fa-credit-card"
+    column_formatters = {Payment.created_at: lambda m, a: to_shamsi(m.created_at)}
+    column_formatters_detail = {Payment.created_at: lambda m, a: to_shamsi(m.created_at)}
     column_list = ["id", "order_id", "amount", "gateway", "authority", "ref_id", "status", "created_at"]
     column_searchable_list = ["authority", "ref_id", "order_id"]
     column_labels = {
@@ -383,6 +413,8 @@ class EnrollmentAdmin(ModelView, model=Enrollment):
     name = "دسترسی"
     name_plural = "۱۰. دسترسی‌های دانشجویان"
     icon = "fa-solid fa-id-card"
+    column_formatters = {Enrollment.created_at: lambda m, a: to_shamsi(m.created_at)}
+    column_formatters_detail = {Enrollment.created_at: lambda m, a: to_shamsi(m.created_at)}
     column_list = ["id", "user_id", "course_id", "purchased_price", "created_at"]
     column_searchable_list = ["user_id", "course_id"]
     column_labels = {"id": "شناسه", "user_id": "دانشجو", "course_id": "دوره آموزشی", "purchased_price": "مبلغ خرید",
@@ -415,7 +447,8 @@ class ArticleAdmin(ModelView, model=Article):
     name = "مقاله"
     name_plural = "۱۳. مقالات وبلاگ"
     icon = "fa-solid fa-newspaper"
-
+    column_formatters = {Article.created_at: lambda m, a: to_shamsi(m.created_at)}
+    column_formatters_detail = {Article.created_at: lambda m, a: to_shamsi(m.created_at)}
     column_list = ["id", "title", "slug", "author_id", "created_at"]
     column_searchable_list = ["title", "slug"]
     form_columns = ["title", "slug", "image_url", "content", "meta_description", "tags", "author_id"]
@@ -446,7 +479,8 @@ class GalleryItemAdmin(ModelView, model=GalleryItem):
     name = "تصویر گالری"
     name_plural = "۱۴. گالری نمونه‌کارها"
     icon = "fa-solid fa-images"
-
+    column_formatters = {GalleryItem.created_at: lambda m, a: to_shamsi(m.created_at)}
+    column_formatters_detail = {GalleryItem.created_at: lambda m, a: to_shamsi(m.created_at)}
     column_list = ["id", "title", "category", "image_url", "created_at"]
     column_searchable_list = ["title", "category"]
     form_columns = ["title", "category", "image_url", "alt_text"]
@@ -477,6 +511,8 @@ class ContactMessageAdmin(ModelView, model=ContactMessage):
     name_plural = "۱۵. پیام‌های تماس با ما"
     icon = "fa-solid fa-envelope-open-text"
     column_list = ["id", "name", "phone_number", "message", "created_at"]
+    column_formatters = {ContactMessage.created_at: lambda m, a: to_shamsi(m.created_at)}
+    column_formatters_detail = {ContactMessage.created_at: lambda m, a: to_shamsi(m.created_at)}
     column_searchable_list = ["name", "phone_number"]
     column_labels = {"id": "شناسه", "name": "فرستنده", "phone_number": "شماره تماس", "message": "متن پیام",
                      "created_at": "تاریخ ارسال"}
@@ -487,6 +523,8 @@ class SupportMessageAdmin(ModelView, model=SupportMessage):
     name_plural = "۱۶. پیام‌های پشتیبانی زنده"
     icon = "fa-solid fa-comments"
     column_list = ["id", "room_user_id", "sender_id", "content", "is_read", "created_at"]
+    column_formatters = {SupportMessage.created_at: lambda m, a: to_shamsi(m.created_at)}
+    column_formatters_detail = {SupportMessage.created_at: lambda m, a: to_shamsi(m.created_at)}
     column_searchable_list = ["content"]
     column_labels = {"id": "شناسه", "room_user_id": "اتاق چت", "sender_id": "فرستنده", "content": "متن",
                      "is_read": "خوانده شده؟", "created_at": "زمان"}
@@ -501,6 +539,8 @@ class HighlightCategoryAdmin(ModelView, model=HighlightCategory):
     icon = "fa-solid fa-folder-open"
 
     column_list = ["id", "title", "created_at"]
+    column_formatters = {HighlightCategory.created_at: lambda m, a: to_shamsi(m.created_at)}
+    column_formatters_detail = {HighlightCategory.created_at: lambda m, a: to_shamsi(m.created_at)}
     form_columns = ["title", "cover_url"]
 
     form_overrides = {"cover_url": FileField}
@@ -531,6 +571,8 @@ class HighlightItemAdmin(ModelView, model=HighlightItem):
     icon = "fa-solid fa-image"
 
     column_list = ["id", "category_id", "created_at"]
+    column_formatters = {HighlightItem.created_at: lambda m, a: to_shamsi(m.created_at)}
+    column_formatters_detail = {HighlightItem.created_at: lambda m, a: to_shamsi(m.created_at)}
     form_columns = ["category", "image_url"]
 
     form_overrides = {"image_url": FileField}
@@ -576,7 +618,12 @@ class CourseReviewAdmin(ModelView, model=CourseReview):
             f'<a href="{model.image_url}" target="_blank">'
             f'<img src="{model.image_url}" style="max-height: 50px; border-radius: 8px; object-fit: cover; border: 1px solid #ddd;" />'
             f'</a>'
-        ) if model.image_url else "بدون عکس"
+        ) if model.image_url else "بدون عکس",
+        CourseReview.created_at: lambda m, a: to_shamsi(m.created_at)
+    }
+
+    column_formatters_detail = {
+        CourseReview.created_at: lambda m, a: to_shamsi(m.created_at)
     }
 
     def is_accessible(self, request: Request) -> bool:
