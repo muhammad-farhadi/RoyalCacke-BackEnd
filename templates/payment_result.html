@@ -234,15 +234,19 @@
 
 <script>
     function returnToApp() {
-        // ۱. تلاش برای باز کردن دیپ‌لینک اختصاصی اپلیکیشن فلاتر شما جهت هدایت مستقیم به داخل برنامه
-        // اگر کاربر روی اندروید باشد، به صورت خودکار اپ باز شده و وضعیت را دریافت می‌کند
-        const isSuccess = "{{ success }}".toLowerCase() === "true";
-        window.location.href = "royalcake://payment-callback?status=" + (isSuccess ? "success" : "failed") + "&order_id={{ order_id }}";
+        // ۱. تلاش برای بستن پنجره در صورت امکان
+        window.close();
 
-        // ۲. اگر بعد از ۲ ثانیه دیپ لینک باز نشد (مثلاً کاربر روی نسخه وب/PWA بود)، او را به صفحه اصلی سایت هدایت کن
+        // ۲. ارسال دستور اختصاصی برای بسته شدن مرورگر داخلی اندروید
+        // سیستم‌عامل اندروید به محض دیدن این لینک، متوجه میشه که مال اپلیکیشنه و مرورگر رو می‌بنده!
+        window.location.href = "royalcake://close";
+
+        // ۳. فال‌بک برای نسخه PWA:
+        // اگر مرورگر بعد از ۸۰۰ میلی‌ثانیه بسته نشد (یعنی کاربر داخل مرورگر عادی و PWA است)،
+        // او را به آدرس نسخه وب هدایت کن.
         setTimeout(function () {
-            window.location.href = "/";
-        }, 2000);
+            window.location.href = "https://pwa.royalcakes.ir/";
+        }, 800);
     }
 </script>
 </body>
