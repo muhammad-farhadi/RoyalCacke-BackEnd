@@ -41,9 +41,12 @@ class User(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
                         onupdate=lambda: datetime.now(timezone.utc))
-
+    current_session_id = Column(String, nullable=True)
     # روابط (Relationships)
     roles = relationship("Role", secondary=user_roles, back_populates="users")
+
+    def __str__(self):
+        return self.full_name
 
 
 class Role(Base):
@@ -57,6 +60,9 @@ class Role(Base):
     users = relationship("User", secondary=user_roles, back_populates="roles")
     permissions = relationship("Permission", secondary=role_permissions, back_populates="roles")
 
+    def __str__(self):
+        return self.name
+
 
 class Permission(Base):
     __tablename__ = "permissions"
@@ -67,3 +73,6 @@ class Permission(Base):
 
     # روابط (Relationships)
     roles = relationship("Role", secondary=role_permissions, back_populates="permissions")
+
+    def __str__(self):
+        return self.name

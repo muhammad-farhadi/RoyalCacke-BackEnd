@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نتیجه پرداخت | رویال کیک</title>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet"
+          type="text/css"/>
+
+    <style>
+        :root {
+            --primary-green: #14876b;
+            --success-color: #25D366;
+            --error-color: #ff4d4d;
+            --dark-text: #2d3748;
+            --light-bg: #f7fafc;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Vazirmatn', sans-serif;
+        }
+
+        body {
+            background-color: var(--light-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* کارت اصلی نتیجه پرداخت */
+        .receipt-card {
+            background: #ffffff;
+            border-radius: 30px;
+            box-shadow: 0 15px 35px rgba(20, 135, 107, 0.08);
+            width: 100%;
+            max-width: 450px;
+            padding: 40px 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* لبه رنگی تزئینی بالای کارت بر اساس وضعیت */
+        .card-top-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 8px;
+        }
+
+        .success-bar {
+            background-color: var(--success-color);
+        }
+
+        .error-bar {
+            background-color: var(--error-color);
+        }
+
+        /* استایل آیکون‌های متحرک وضعیت */
+        .status-icon-wrapper {
+            width: 90px;
+            height: 90px;
+            border-radius: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 24px auto;
+            animation: scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.2s both;
+        }
+
+        .success-bg {
+            background-color: rgba(37, 211, 102, 0.1);
+            color: var(--success-color);
+        }
+
+        .error-bg {
+            background-color: rgba(255, 77, 77, 0.1);
+            color: var(--error-color);
+        }
+
+        @keyframes scaleIn {
+            from {
+                transform: scale(0);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        h1 {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--dark-text);
+            margin-bottom: 12px;
+        }
+
+        .status-desc {
+            font-size: 14px;
+            color: #718096;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        /* فاکتور و جزئیات تراکنش */
+        .details-box {
+            background-color: #f8fafc;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 35px;
+            border: 1px dashed #e2e8f0;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            font-size: 13.5px;
+        }
+
+        .detail-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .detail-label {
+            color: #a0aec0;
+            font-weight: 500;
+        }
+
+        .detail-value {
+            color: var(--dark-text);
+            font-weight: 700;
+        }
+
+        .amount-value {
+            color: var(--primary-green);
+            font-size: 16px;
+        }
+
+        /* دکمه بازگشت به اپلیکیشن */
+        .btn-return {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            background-color: var(--primary-green);
+            color: #ffffff;
+            text-decoration: none;
+            padding: 15px 24px;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 15px;
+            box-shadow: 0 8px 20px rgba(20, 135, 107, 0.2);
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-return:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(20, 135, 107, 0.3);
+            background-color: #0f6c55;
+        }
+
+        .btn-return:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+<div class="receipt-card">
+    <div class="card-top-bar {% if success %}success-bar{% else %}error-bar{% endif %}"></div>
+
+    {% if success %}
+    <div class="status-icon-wrapper success-bg">
+        <svg xmlns="http://www.w3.org/2000/svg" width="46" height="46" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z"/>
+        </svg>
+    </div>
+    <h1>پرداخت با موفقیت انجام شد</h1>
+    <p class="status-desc">هنرجوی گرامی، دسترسی به دوره آموزشی بلافاصله برای حساب کاربری شما فعال گردید. از یادگیری لذت
+        ببرید!</p>
+    {% else %}
+    <div class="status-icon-wrapper error-bg">
+        <svg xmlns="http://www.w3.org/2000/svg" width="42" height="42" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+        </svg>
+    </div>
+    <h1>عملیات پرداخت ناموفق بود</h1>
+    <p class="status-desc">تراکنش توسط کاربر لغو شد یا مشکلی در پورتال بانک به وجود آمده است. کسر پول احتمالی تا ۷۲ ساعت
+        آینده به حسابتان برمی‌گردد.</p>
+    {% endif %}
+
+    <div class="details-box">
+        <div class="detail-row">
+            <span class="detail-label">شماره فاکتور سفارش:</span>
+            <span class="detail-value">{{ order_id }}</span>
+        </div>
+        {% if success and ref_id %}
+        <div class="detail-row">
+            <span class="detail-label">کد پیگیری بانکی (RefID):</span>
+            <span class="detail-value" style="letter-spacing: 1px;">{{ ref_id }}</span>
+        </div>
+        {% endif %}
+        <div class="detail-row">
+            <span class="detail-label">مبلغ پرداختی:</span>
+            <span class="detail-value amount-value">{{ amount }} تومان</span>
+        </div>
+    </div>
+
+    <button class="btn-return" onclick="returnToApp()">تایید و بازگشت به آکادمی</button>
+</div>
+
+<script>
+    function returnToApp() {
+        // ۱. تلاش برای باز کردن دیپ‌لینک اختصاصی اپلیکیشن فلاتر شما جهت هدایت مستقیم به داخل برنامه
+        // اگر کاربر روی اندروید باشد، به صورت خودکار اپ باز شده و وضعیت را دریافت می‌کند
+        const isSuccess = "{{ success }}".toLowerCase() === "true";
+        window.location.href = "royalcake://payment-callback?status=" + (isSuccess ? "success" : "failed") + "&order_id={{ order_id }}";
+
+        // ۲. اگر بعد از ۲ ثانیه دیپ لینک باز نشد (مثلاً کاربر روی نسخه وب/PWA بود)، او را به صفحه اصلی سایت هدایت کن
+        setTimeout(function () {
+            window.location.href = "/";
+        }, 2000);
+    }
+</script>
+</body>
+</html>

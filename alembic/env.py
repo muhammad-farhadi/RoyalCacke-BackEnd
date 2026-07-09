@@ -20,6 +20,7 @@ from app.modules.courses.models import Course, Lesson
 from app.modules.orders.models import Order, Enrollment
 from app.modules.index.models import ContactMessage
 from app.modules.support.models import SupportMessage
+from app.modules.highlights.models import HighlightCategory, HighlightItem
 
 # تنظیمات پیش‌فرض Alembic
 config = context.config

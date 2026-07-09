@@ -1,0 +1,23 @@
+{% extends "sqladmin/list.html" %}
+
+{% block content %}
+{{ super() }}
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        if (window.innerWidth <= 768) {
+            // پیدا کردن ردیف دکمه‌ها
+            const buttonContainer = document.querySelector('.page-header .col-auto.ms-auto');
+            if (buttonContainer) {
+                buttonContainer.style.cssText = "display: flex !important; flex-direction: row !important; justify-content: space-between !important; width: 100% !important; margin-top: 15px !important; padding: 0 10px !important;";
+
+                // تنظیم دکمه‌ها
+                const buttons = buttonContainer.querySelectorAll('a.btn');
+                buttons.forEach(btn => {
+                    btn.style.cssText = "flex: 1 !important; margin: 0 5px !important; padding: 5px 2px !important; font-size: 11px !important; line-height: 1 !important;";
+                });
+            }
+        }
+    });
+</script>
+{% endblock %}

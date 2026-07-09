@@ -20,7 +20,10 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         phone_number: str = payload.get("sub")
-        if phone_number is None:
+        # 🔴 دریافت شناسه سشن از اکسس توکن فرستاده شده
+        token_session_id: str = payload.get("session_id")
+
+        if phone_number is None or token_session_id is None:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
@@ -28,6 +31,15 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     user = db.query(models.User).filter(models.User.phone_number == phone_number).first()
     if user is None:
         raise credentials_exception
+
+    # 🔴 ۵. اصلی‌ترین بخش کنترل: مقایسه سشنِ توکن با سشنِ زنده دیتابیس
+    if user.current_session_id != token_session_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="سشن شما به دلیل ورود دستگاه جدید منقضی شده است.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     return user
 
 

@@ -64,3 +64,22 @@ class CourseResponse(CourseBase):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ReviewUserSchema(BaseModel):
+    full_name: str
+
+    class Config:
+        from_attributes = True
+
+
+# خروجی نهایی برای نمایش به بقیه
+class ReviewResponseSchema(BaseModel):
+    id: int
+    content: str
+    image_url: Optional[str] = None
+    created_at: datetime
+    user: ReviewUserSchema  # برای اینکه فرانت نام نویسنده را داشته باشد
+
+    class Config:
+        from_attributes = True

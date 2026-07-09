@@ -13,3 +13,6 @@ class ContactMessage(Base):
     message = Column(Text, nullable=False)
 
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def __str__(self):
+        return self.name

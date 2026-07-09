@@ -4,7 +4,6 @@
     src: url(../font/B-NAZANIN.TTF);
     font-weight: normal;
     font-style: bold;
-
 }
 
 @font-face {
@@ -18,32 +17,20 @@
     src: url(../font/BYekan+\ Bold.ttf);
     font-weight: normal;
 }
+
 @font-face {
     font-family: 'Samim';
     src: url(../font/Samim-Bold.ttf);
     font-weight: normal;
-
-
 }
 
 :root {
-    /* پالت رنگی استخراج شده از تصاویر شما */
-    /* --primary-color: #0d5c46; */
-    --primary-color: #0c4d3b;
-    /* سبز تیره (رنگ پایه کیک و برگ‌ها) */
-    /* --accent-color: #f3a0a6; */
-    --accent-color: #fc94a1;
-    /* صورتی ملایم (رنگ گل‌ها و پاپیون) */
-    /* --light-bg: #fdf3f2;  */
-    --light-bg: #fffbfb;
-    /* پس‌زمینه کرمی/صورتی خیلی روشن (رنگ پس‌زمینه عکس‌ها) */
-    /* --text-dark: #2c3e50; */
+    --primary-color: #0c4d3b; /* سبز تیره */
+    --accent-color: #fc94a1; /* صورتی ملایم */
+    --light-bg: #fffbfb; /* پس‌زمینه کرمی بسیار روشن */
     --text-dark: #333333;
     --text-light: #ffffff;
-    /* --hover-accent: #e57c85; */
-    --hover-accent: #e57a8a;
-
-    /* صورتی کمی تیره‌تر برای هاور */
+    --hover-accent: #e57a8a; /* صورتی هاور */
 }
 
 * {
@@ -51,43 +38,11 @@
     padding: 0;
     box-sizing: border-box;
     font-family: 'Samim', sans-serif;
-    /* font-family: 'b-yekann-bold', sans-serif; */
 }
-
 
 body {
     background-color: var(--light-bg);
-
 }
-
-/* ================= Top Bar ================= */
-/* .top-bar {
-    background-color: var(--primary-color);
-    color: var(--text-light);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 5%;
-    font-size: 14px;
-    letter-spacing: 0.5px;
-}
-
-.contact-info span {
-    margin-left: 20px;
-    font-weight: 300;
-}
-
-.social-icons a {
-    color: var(--text-light);
-    margin-right: 15px;
-    text-decoration: none;
-    transition: color 0.3s ease;
-    font-size: 16px;
-}
-
-.social-icons a:hover {
-    color: var(--accent-color);
-} */
 
 /* ================= Navbar ================= */
 .navbar {
@@ -97,36 +52,20 @@ body {
     padding: 15px 5%;
     background-color: #ffffff;
     box-shadow: 0 4px 15px rgba(13, 92, 70, 0.08);
-    /* سایه ملایم سبز */
     position: sticky;
     top: 0;
     z-index: 1000;
     font-size: 20px;
 }
 
-#courses {
+#courses, #contact-container, #blog-container, #about-container {
     scroll-margin-top: 90px;
 }
-
-#contact-container {
-    scroll-margin-top: 90px;
-}
-
-#blog-container {
-    scroll-margin-top: 90px;
-}
-
-#about-container {
-    scroll-margin-top: 90px;
-}
-
-
 
 .logo {
     display: flex;
     justify-content: space-between;
     align-items: center;
-
 }
 
 .logo h2 {
@@ -143,10 +82,6 @@ body {
     width: 60px;
     height: 60px;
     margin-left: 10px;
-}
-
-.logo-highlight {
-    color: var(--accent-color);
 }
 
 .nav-links {
@@ -188,13 +123,11 @@ body {
     color: var(--hover-accent);
 }
 
-/* دکمه دانلود اپلیکیشن */
 .btn-download {
     background-color: var(--primary-color);
     color: var(--text-light);
     padding: 10px 22px;
     border-radius: 30px;
-    /* لبه‌های گردتر برای حس لطافت بیشتر */
     text-decoration: none;
     font-weight: bold;
     transition: background 0.3s, transform 0.3s;
@@ -213,11 +146,9 @@ body {
     0% {
         box-shadow: 0 0 0 0 rgba(13, 92, 70, 0.4);
     }
-
     70% {
         box-shadow: 0 0 0 10px rgba(13, 92, 70, 0);
     }
-
     100% {
         box-shadow: 0 0 0 0 rgba(13, 92, 70, 0);
     }
@@ -281,7 +212,6 @@ body {
     padding: 12px 30px;
     text-decoration: none;
     border-radius: 30px;
-    /* همگام با دکمه بالا */
     font-size: 1.1rem;
     font-weight: bold;
     transition: 0.3s;
@@ -294,23 +224,17 @@ body {
     transform: scale(1.05);
 }
 
-/* کنترل‌های اسلایدر */
-.prev,
-.next {
+.prev, .next {
     cursor: pointer;
     position: absolute;
     top: 50%;
-    width: auto;
-    padding: 16px;
     margin-top: -22px;
     color: white;
     font-weight: bold;
     font-size: 24px;
     transition: 0.6s ease;
     border-radius: 50%;
-    /* دکمه‌های گرد */
     background-color: rgba(13, 92, 70, 0.4);
-    /* استفاده از سبز ملایم */
     user-select: none;
     width: 50px;
     height: 50px;
@@ -327,8 +251,7 @@ body {
     right: 20px;
 }
 
-.prev:hover,
-.next:hover {
+.prev:hover, .next:hover {
     background-color: var(--primary-color);
 }
 
@@ -350,12 +273,10 @@ body {
     transition: background-color 0.6s ease;
 }
 
-.active-dot,
-.dot:hover {
+.active-dot, .dot:hover {
     background-color: var(--accent-color);
 }
 
-/* انیمیشن‌ها */
 .fade {
     animation-name: fade;
     animation-duration: 1.5s;
@@ -365,7 +286,6 @@ body {
     from {
         opacity: .4
     }
-
     to {
         opacity: 1
     }
@@ -376,20 +296,75 @@ body {
         opacity: 0;
         transform: translateY(30px);
     }
-
     to {
         opacity: 1;
         transform: translateY(0);
     }
 }
 
+/* ================= Intro Courses Section (Desktop Style) ================= */
+.intro-courses-section {
+    padding: 60px 5%;
+    text-align: center;
+    background-color: #ffffff;
+    margin-bottom: 20px;
+}
 
+.intro-courses-container {
+    display: flex;
+    justify-content: center;
+    gap: 60px;
+    flex-wrap: wrap;
+    margin-bottom: 35px;
+}
 
+.intro-course-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 180px;
+}
 
+.intro-course-item .circle-img {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    overflow: hidden;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    border: 4px solid var(--accent-color);
+    transition: transform 0.3s ease, border-color 0.3s ease;
+}
 
+.intro-course-item .circle-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
 
+.intro-course-item:hover .circle-img {
+    transform: scale(1.08);
+    border-color: var(--primary-color);
+}
 
+.intro-course-item h4 {
+    margin-top: 18px;
+    color: var(--primary-color);
+    font-size: 16px;
+    font-weight: bold;
+}
 
+.intro-btn-container {
+    margin-top: 25px;
+    display: flex;
+    justify-content: center;
+    padding: 9px 28px;
+}
+
+.intro-btn-container .btn-primary {
+    padding: 12px 40px;
+    font-size: 16px;
+    box-shadow: 0 4px 15px rgba(252, 148, 161, 0.4);
+}
 
 /* ================= Courses Section ================= */
 .courses-container {
@@ -403,19 +378,12 @@ body {
     margin-bottom: 40px;
 }
 
-.section-title h2 {
+.section-title h2, .section-title a {
     color: var(--primary-color);
     font-size: 2.2rem;
     font-weight: 700;
-}
-
-.section-title a {
     text-decoration: none;
-    color: var(--primary-color);
-    font-size: 2.2rem;
-    font-weight: 700;
 }
-
 
 .section-title h2 span {
     color: var(--accent-color);
@@ -427,14 +395,12 @@ body {
     font-size: 1.1rem;
 }
 
-/* شبکه گرید کارت‌ها */
 .courses-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 30px;
 }
 
-/* استایل هر کارت دوره */
 .course-card {
     background-color: #ffffff;
     border-radius: 20px;
@@ -445,31 +411,28 @@ body {
     flex-direction: column;
 }
 
-/* افکت حرکت کارت به سمت بالا در هاور
 .course-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 15px 35px rgba(252, 148, 161, 0.15);
-} */
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
 
 .course-image {
     position: relative;
-    height: 370px;
+    height: 335px;
     overflow: hidden;
 }
 
 .course-image img {
-    width: 335px;
-    height: 370px;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
     transition: transform 0.5s ease;
 }
 
 .course-card:hover .course-image img {
     transform: scale(1.08);
-    /* زوم ملایم عکس در هاور */
 }
 
-/* نشان یا بج روی عکس */
 .badge {
     position: absolute;
     top: 15px;
@@ -495,37 +458,22 @@ body {
     margin-bottom: 12px;
     line-height: 1.6;
     height: 56px;
-    /* هماهنگ کردن ارتفاع عنوان‌ها */
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
 
-.course-teacher {
-    font-size: 14px;
-    color: #777;
-    margin-bottom: 15px;
-}
-
-.course-teacher i {
-    color: var(--accent-color);
-    margin-left: 5px;
-}
-
 .course-info {
     display: flex;
-    justify-content: space-between;
-    background-color: var(--light-bg);
-    padding: 10px 15px;
-    border-radius: 12px;
-    font-size: 13px;
-    color: #555;
+    gap: 20px;
+    font-size: 0.9rem;
+    color: #777;
     margin-bottom: 20px;
 }
 
 .course-info i {
-    color: var(--primary-color);
+    color: var(--accent-color);
     margin-left: 5px;
 }
 
@@ -534,7 +482,6 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-top: auto;
-    /* چسبیدن به پایین کارت */
     border-top: 1px solid #f1f1f1;
     padding-top: 15px;
 }
@@ -550,7 +497,6 @@ body {
     color: var(--primary-color);
 }
 
-/* دکمه ثبت نام دوره */
 .btn-course {
     background-color: transparent;
     color: var(--primary-color);
@@ -568,24 +514,14 @@ body {
     color: white;
 }
 
-
-
-
-
-
-
-
 /* ================= Blog Section ================= */
 .blog-container {
     padding: 60px 5%;
     max-width: 1200px;
-    margin: 0 auto;
+    margin: 40px auto 60px auto;
     background-color: #ffffff;
-    /* ایجاد یک بخش سفید مجزا روی پس‌زمینه کرمی اصلی */
     border-radius: 30px;
     box-shadow: 0 10px 30px rgba(12, 77, 59, 0.02);
-    margin-top: 40px;
-    margin-bottom: 60px;
 }
 
 .blog-grid {
@@ -596,7 +532,6 @@ body {
 
 .blog-card {
     background-color: var(--light-bg);
-    /* کارت‌ها کمی رنگ کرمی/صورتی ملایم دارند */
     border-radius: 20px;
     overflow: hidden;
     transition: transform 0.3s ease;
@@ -606,7 +541,6 @@ body {
     position: relative;
     height: 280px;
     overflow: hidden;
-    /* این دستور باعث می‌شود زوم عکس بیرون نزند */
 }
 
 .blog-image img {
@@ -614,10 +548,8 @@ body {
     height: 100%;
     object-fit: cover;
     transition: transform 0.5s ease;
-    /* انیمیشن نرم زوم */
 }
 
-/* افکت زوم عکس هنگام هاور روی کل کارت مقاله */
 .blog-card:hover .blog-image img {
     transform: scale(1.1);
 }
@@ -646,7 +578,6 @@ body {
     margin-bottom: 12px;
 }
 
-/* دکمه لایک */
 .like-btn {
     background: none;
     border: none;
@@ -656,18 +587,12 @@ body {
     font-size: 14px;
 }
 
-.like-btn i {
-    transition: transform 0.2s ease;
-}
-
 .like-btn.liked {
     color: #e74c3c;
-    /* تغییر رنگ به قرمز در صورت لایک */
 }
 
 .like-btn.liked i {
     transform: scale(1.2);
-    /* افکت تپش کوچک موقع کلیک */
 }
 
 .blog-content h3 {
@@ -685,7 +610,6 @@ body {
     text-align: justify;
 }
 
-/* دکمه ادامه مطلب */
 .btn-read-more {
     color: var(--accent-color);
     text-decoration: none;
@@ -700,13 +624,7 @@ body {
 .btn-read-more:hover {
     color: var(--hover-accent);
     gap: 10px;
-    /* جلو رفتن فلش در حالت هاور */
 }
-
-
-
-
-
 
 /* ================= PWA Section ================= */
 .pwa-container {
@@ -901,7 +819,6 @@ body {
 }
 
 .about-circle-deco {
-
     width: 294px;
     height: 360px;
     border-radius: 19%;
@@ -910,13 +827,13 @@ body {
     overflow: hidden;
 }
 
-
 .about-circle-deco img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
+/* ================= Gallery Section ================= */
 .gallery-section {
     padding: 60px 20px;
     width: 100%;
@@ -928,17 +845,6 @@ body {
     text-align: center;
 }
 
-.section-title {
-    color: var(--primary-color);
-    font-size: 28px;
-    margin-bottom: 30px;
-}
-
-.section-title span {
-    color: var(--accent-color);
-}
-
-/* استایل دکمه‌های فیلتر */
 .gallery-filters {
     display: flex;
     justify-content: center;
@@ -959,14 +865,12 @@ body {
     font-size: 15px;
 }
 
-.filter-btn.active,
-.filter-btn:hover {
+.filter-btn.active, .filter-btn:hover {
     background: var(--primary-color);
     color: white;
     box-shadow: 0 5px 15px rgba(12, 77, 59, 0.2);
 }
 
-/* شبکه گالری */
 .gallery-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -981,9 +885,7 @@ body {
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
     background: #eee;
     animation: fadeIn 0.5s ease forwards;
-    /* transition: transform 0.4s ease, opacity 0.4s ease; */
     display: none;
-    
 }
 
 .gallery-item.hide {
@@ -998,11 +900,9 @@ body {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    /* کادر کاملاً هماهنگ بدون دفرمه شدن */
     transition: 0.5s ease;
 }
 
-/* افکت هاور روی عکس‌ها */
 .gallery-overlay {
     position: absolute;
     top: 0;
@@ -1010,7 +910,6 @@ body {
     width: 100%;
     height: 100%;
     background: rgba(12, 77, 59, 0.8);
-    /* لایه سبز برند در حالت هاور */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -1038,9 +937,6 @@ body {
     transform: translateY(0);
 }
 
-
-
-
 /* ================= Contact Section ================= */
 .contact-container {
     padding: 60px 5%;
@@ -1067,8 +963,7 @@ body {
     margin-bottom: 20px;
 }
 
-.input-group input,
-.input-group textarea {
+.input-group input, .input-group textarea {
     width: 100%;
     padding: 12px 15px;
     border: 1px solid #ddd;
@@ -1096,22 +991,21 @@ body {
     padding: 0 5px;
 }
 
-.input-group textarea~label {
+.input-group textarea ~ label {
     top: 25px;
 }
 
-.input-group input:focus~label,
-.input-group input:not(:placeholder-shown)~label,
-.input-group textarea:focus~label,
-.input-group textarea:not(:placeholder-shown)~label {
+.input-group input:focus ~ label,
+.input-group input:not(:placeholder-shown) ~ label,
+.input-group textarea:focus ~ label,
+.input-group textarea:not(:placeholder-shown) ~ label {
     top: 0;
     font-size: 12px;
     color: var(--primary-color);
     font-weight: bold;
 }
 
-.input-group input:focus,
-.input-group textarea:focus {
+.input-group input:focus, .input-group textarea:focus {
     border-color: var(--primary-color);
 }
 
@@ -1161,7 +1055,6 @@ body {
     color: var(--primary-color);
 }
 
-/* کارت اختصاصی تمام شبکه‌های اجتماعی */
 .social-channels-card {
     background: #ffffff;
     padding: 25px;
@@ -1206,7 +1099,6 @@ body {
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
-/* رنگ‌بندی تفکیک‌شده و رسمی هر شبکه اجتماعی */
 .instagram {
     background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
 }
@@ -1246,25 +1138,15 @@ body {
     gap: 10px;
     margin-top: 20px;
 }
+
 .btn-load-more:hover {
     background: var(--primary-color);
     color: white;
     box-shadow: 0 5px 15px rgba(12, 77, 59, 0.2);
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(15px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* @media screen and (max-width: 768px) {
-    .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; }
-    .gallery-item { height: 200px; }
-} */
-
-/* استایل باکس پیام‌های وضعیت فرم تماس */
 #royalContactForm {
-    position: relative; /* برای تنظیم موقعیت پیام در صورت نیاز */
+    position: relative;
 }
 
 .form-alert-msg {
@@ -1279,21 +1161,18 @@ body {
     transition: all 0.4s ease;
 }
 
-/* حالت موفقیت (سبز ملایم کافی‌شاپی) */
 .form-alert-msg.success {
     background-color: #e6f4ea;
     color: #137333;
     border: 1px solid #c2e7cd;
 }
 
-/* حالت خطا (قرمز ملایم) */
 .form-alert-msg.error {
     background-color: #fce8e6;
     color: #c5221f;
     border: 1px solid #fad2cf;
 }
 
-/* انیمیشن ورود ظریف پیام */
 @keyframes slideInUp {
     from {
         opacity: 0;
@@ -1304,16 +1183,15 @@ body {
         transform: translateY(0);
     }
 }
+
 /* ================= Footer Section ================= */
 .royal-footer {
     background-color: #0c4d3b;
-    /* سبز یشمی اصلی */
     color: #ffffff;
     padding: 60px 5% 20px 5%;
     margin-top: 80px;
     position: relative;
     border-top: 4px solid #fc94a1;
-    /* خط صورتی بالای فوتر */
 }
 
 .footer-grid {
@@ -1334,7 +1212,6 @@ body {
     color: #ffffff;
 }
 
-/* خط صورتی زیر عنوان‌های فوتر */
 .footer-column h3::after {
     content: '';
     position: absolute;
@@ -1384,7 +1261,6 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* لینک‌های فوتر */
 .footer-links {
     list-style: none;
     padding: 0;
@@ -1419,7 +1295,6 @@ body {
     transform: translateX(-3px);
 }
 
-/* بخش خبرنامه فوتر */
 .newsletter-col p {
     font-size: 14px;
     color: #d0e5e0;
@@ -1468,7 +1343,6 @@ body {
     transform: scale(1.05);
 }
 
-/* بخش کپی رایت */
 .footer-bottom {
     text-align: center;
     padding-top: 20px;
@@ -1480,7 +1354,8 @@ body {
     color: #fc94a1;
     font-weight: bold;
 }
-/* کل صفحه پوشانده می‌شود */
+
+/* ================= Modals ================= */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -1488,7 +1363,7 @@ body {
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px); /* افکت شیشه‌ای مات */
+    backdrop-filter: blur(4px);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -1498,13 +1373,11 @@ body {
     transition: all 0.3s ease;
 }
 
-/* وقتی پاپ‌آپ فعال می‌شود */
 .modal-overlay.show {
     opacity: 1;
     pointer-events: auto;
 }
 
-/* باکس اصلی پیام داخل پاپ‌آپ */
 .modal-content {
     background: #fff;
     padding: 30px;
@@ -1517,12 +1390,10 @@ body {
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* انیمیشن جهش باکس به سمت بالا هنگام باز شدن */
 .modal-overlay.show .modal-content {
     transform: translateY(0);
 }
 
-/* آیکون تایید سبز رنگ */
 .modal-icon {
     font-size: 3.5rem;
     color: #2ec4b6;
@@ -1543,14 +1414,12 @@ body {
     margin-bottom: 20px;
 }
 
-/* دکمه بستن مپ‌آپ */
 .btn-close-modal {
     background: #ff9f1c;
     color: #fff;
     border: none;
     padding: 10px 30px;
     font-size: 1rem;
-    font-family: inherit;
     border-radius: 25px;
     cursor: pointer;
     box-shadow: 0 4px 10px rgba(255, 159, 28, 0.3);
@@ -1563,192 +1432,54 @@ body {
 }
 
 @keyframes scaleUp {
-    from { transform: scale(0); }
-    to { transform: scale(1); }
+    from {
+        transform: scale(0);
+    }
+    to {
+        transform: scale(1);
+    }
 }
-/* ریسپانسیو فوتر برای موبایل */
+
+/* ================= Responsive Section (Mobile/Tablet) ================= */
 @media screen and (max-width: 768px) {
-    .footer-grid {
-        grid-template-columns: 1fr;
-        gap: 30px;
-        text-align: center;
+    /* اصلاح کامل بخش دایره‌های دوره روی موبایل */
+    .intro-courses-section {
+        padding: 30px 3% !important;
     }
 
-    .footer-column h3::after {
-        right: 50%;
-        transform: translateX(50%);
+    .intro-courses-container {
+        display: flex !important;
+        flex-direction: row !important; /* اجبار به ماندن در یک ردیف */
+        flex-wrap: nowrap !important; /* جلوگیری از شکستن خط و رفتن به ردیف پایین */
+        justify-content: space-between !important;
+        gap: 8px !important; /* فاصله ظریف بین آیتم‌ها */
+        margin-bottom: 20px;
     }
 
-    .footer-links a {
-        justify-content: center;
+    .intro-course-item {
+        flex: 1 !important; /* تخصیص فضای کاملاً مساوی به هر آیتم */
+        width: auto !important;
+        min-width: 0 !important;
     }
 
-    .trust-badges {
-        justify-content: center;
-    }
-}
-
-
-
-
-.intro-courses-section {
-    padding: 60px 5%;
-    text-align: center;
-    background-color: #ffffff;
-    margin-bottom: 20px;
-}
-
-.intro-courses-container {
-    display: flex;
-    justify-content: center;
-    gap: 60px;
-    flex-wrap: wrap;
-    margin-bottom: 35px;
-}
-
-.intro-course-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 180px;
-}
-
-.intro-course-item .circle-img {
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    overflow: hidden;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    border: 4px solid var(--accent-color);
-    transition: transform 0.3s ease, border-color 0.3s ease;
-}
-
-.intro-course-item .circle-img img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.intro-course-item:hover .circle-img {
-    transform: scale(1.08);
-    border-color: var(--primary-color);
-}
-
-.intro-course-item h4 {
-    margin-top: 18px;
-    color: var(--primary-color);
-    font-size: 16px;
-    font-weight: bold;
-}
-
-
-.intro-btn-container {
-    margin-top: 25px;
-    display: flex;
-    justify-content: center;
-    padding: 9px 28px;
-
-}
-
-.intro-btn-container .btn-primary {
-    padding: 12px 40px;
-    font-size: 16px;
-    box-shadow: 0 4px 15px rgba(252, 148, 161, 0.4);
-}
-
-/* بخش دوره‌ها */
-.courses-container {
-    padding: 60px 5%;
-}
-
-.section-header {
-    text-align: center;
-    margin-bottom: 40px;
-}
-
-.section-header h2 {
-    font-size: 2rem;
-    color: var(--primary-color);
-    margin-bottom: 10px;
-}
-
-.courses-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1max));
-    gap: 30px;
-}
-
-.course-card {
-    background: var(--white);
-    border-radius: 15px;
-    overflow: hidden;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-    transition: var(--transition);
-}
-
-.course-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-}
-
-.course-image {
-    position: relative;
-    height: 220px;
-}
-
-.course-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.badge {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    background-color: var(--accent-color);
-    color: var(--white);
-    padding: 5px 15px;
-    border-radius: 20px;
-    font-size: 0.85rem;
-}
-
-.course-content {
-    padding: 25px;
-}
-
-.course-content h3 {
-    font-size: 1.25rem;
-    color: var(--primary-color);
-    margin-bottom: 15px;
-}
-
-.course-info {
-    display: flex;
-    gap: 20px;
-    font-size: 0.9rem;
-    color: #777;
-    margin-bottom: 20px;
-}
-
-.course-info i {
-    color: var(--accent-color);
-    margin-left: 5px;
-}
-
-/* ================= Responsive (Mobile) ================= */
-@media screen and (max-width: 768px) {
-    .top-bar {
-        flex-direction: column;
-        text-align: center;
-        gap: 10px;
+    .intro-course-item .circle-img {
+        width: 72px !important; /* کوچک کردن بهینه قطر دایره‌ها */
+        height: 72px !important;
+        border-width: 2.5px !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     }
 
-    .contact-info span {
-        display: block;
-        margin: 5px 0;
+    .intro-course-item h4 {
+        margin-top: 10px !important;
+        font-size: 11px !important; /* تنظیم بهینه سایز نوشته‌ها */
+        line-height: 1.3;
+        white-space: nowrap; /* جلوگیری از ۲ خطی شدن متن */
+        overflow: hidden;
+        text-overflow: ellipsis; /* سه نقطه برای متن‌های طولانی */
+        width: 100%;
     }
 
+    /* سایر المان‌های عمومی هدر و موبایل */
     .menu-toggle {
         display: block !important;
         order: 3;
@@ -1780,24 +1511,24 @@ body {
     }
 
     .navbar {
-    display: flex;
-    justify-content: space-between !important;
-    align-items: center;
-    flex-direction: row;
-    }    
+        display: flex;
+        justify-content: space-between !important;
+        align-items: center;
+        flex-direction: row;
+    }
+
     .logo {
         order: 1;
-
-    }  
+    }
 
     .nav-buttons {
-        /* display: none; */
         display: block;
         order: 2;
         margin: 0 auto !important;
         text-align: center;
     }
-    .nav-buttons .btn-download{
+
+    .nav-buttons .btn-download {
         padding: 6px 12px;
         font-size: 0.8rem;
         white-space: nowrap;
@@ -1810,23 +1541,44 @@ body {
     .slide-content h1 {
         font-size: 2rem;
     }
+
+    .gallery-grid {
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 15px;
+    }
+
+    .gallery-item {
+        height: 200px;
+    }
+
+    .filter-btn {
+        padding: 8px 18px;
+        font-size: 14px;
+    }
+
+    .footer-grid {
+        grid-template-columns: 1fr;
+        gap: 30px;
+        text-align: center;
+    }
+
+    .footer-column h3::after {
+        right: 50%;
+        transform: translateX(50%);
+    }
+
+    .footer-links a, .trust-badges {
+        justify-content: center;
+    }
 }
 
-/* واکنش‌گرایی کل بخش‌ها برای موبایل */
 @media screen and (max-width: 992px) {
-
-    .pwa-wrapper,
-    .about-container,
-    .contact-wrapper {
+    .pwa-wrapper, .about-container, .contact-wrapper {
         flex-direction: column;
         text-align: center;
     }
 
-    .pwa-features {
-        justify-content: center;
-    }
-
-    .pwa-buttons {
+    .pwa-features, .pwa-buttons, .trust-badges {
         justify-content: center;
     }
 
@@ -1844,18 +1596,8 @@ body {
         grid-template-columns: 1fr;
     }
 
-    .info-boxes-wrapper {
+    .info-boxes-wrapper, .social-full-grid {
+        grid-template-columns: 1fr;
         flex-direction: column;
     }
-
-    .social-full-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* ریسپانسیو تبلت و موبایل */
-@media screen and (max-width: 768px) {
-    .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; }
-    .gallery-item { height: 200px; }
-    .filter-btn { padding: 8px 18px; font-size: 14px; }
 }
