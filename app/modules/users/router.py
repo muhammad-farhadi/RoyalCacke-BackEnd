@@ -138,9 +138,9 @@ def request_password_reset(data: schemas.ForgotPasswordRequest, db: Session = De
     user.otp_code = otp
     user.otp_expire = datetime.now(timezone.utc) + timedelta(minutes=2)
     db.commit()
-
+    send_otp_sms(user.phone_number, otp)
     # ماک ارسال پیامک
-    print(f"\n{'=' * 40}\n[SMS MOCK] بازیابی رمز عبور برای {user.phone_number}:\nکد: {otp}\n{'=' * 40}\n")
+    # print(f"\n{'=' * 40}\n[SMS MOCK] بازیابی رمز عبور برای {user.phone_number}:\nکد: {otp}\n{'=' * 40}\n")
 
     return {"message": "اگر این شماره در سیستم باشد، کد تایید ارسال خواهد شد."}
 
