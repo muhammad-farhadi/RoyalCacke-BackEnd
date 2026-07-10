@@ -16,6 +16,7 @@ from wtforms.widgets import FileInput
 from app.core.security import verify_password, create_access_token, SECRET_KEY, ALGORITHM, get_password_hash
 from app.modules.highlights.models import HighlightItem, HighlightCategory
 from wtforms.validators import Optional
+from concurrent.futures import ThreadPoolExecutor
 
 # پچ کردن باگ WTForms روی پایتون 3.14 برای حل ارور BooleanInputWidget
 try:
@@ -77,6 +78,20 @@ def translate_status(status_en):
         return "-"
     # اگر کلمه در دیکشنری بود ترجمه میکند، وگرنه همان کلمه انگلیسی را نشان میدهد
     return STATUS_FA.get(status_en.lower(), status_en)
+
+
+class OptionalFileInput(FileInput):
+    """
+    این ویجت سفارشی صفت required را از تگ HTML حذف می‌کند
+    تا مرورگر در هنگام ویرایش به خالی بودن فایل ایراد نگیرد.
+    """
+
+    def __call__(self, field, **kwargs):
+        # غیرفعال کردن پرچم اجباری در سطح WTForms
+        field.flags.required = False
+        # حذف قطعی صفت required از خروجی تگ HTML مرورگر
+        kwargs.pop("required", None)
+        return super().__call__(field, **kwargs)
 
 
 # تابع تبدیل ویدیو به HLS (دقیقاً مشابه روتر شما)
@@ -361,12 +376,13 @@ class LessonAdmin(ModelView, model=Lesson):
         Lesson.created_at: lambda m, a: to_shamsi(m.created_at)
     }
 
-    # 🟢 اصلاح این بخش: اضافه کردن Optional به وانیتدیتورها برای جلوگیری از ارور فیلد اجباری در هنگام ویرایش
     form_overrides = {"video_url": FileField}
+
+    # 🟢 آپدیت این بخش: استفاده از ویجت سفارشی جدیدمان
     form_args = {
         "video_url": {
-            "widget": FileInput(),
-            "validators": [Optional()]  # باعث می‌شود سیستم در فرم به خالی بودن فایل ایراد نگیرد
+            "widget": OptionalFileInput(),  # استفاده از ویجت فیلترکننده تگ required
+            "validators": [Optional()]
         }
     }
 
@@ -385,7 +401,6 @@ class LessonAdmin(ModelView, model=Lesson):
         if "video_url" in data:
             val = data["video_url"]
 
-            # چک می‌کنیم که آیا فایلی واقعاً آپلود شده است یا خیر
             if hasattr(val, "filename") and val.filename:
                 folder_name = f"lesson_{int(time.time())}_{uuid.uuid4().hex[:6]}"
                 lesson_dir = os.path.join(PRIVATE_VIDEO_DIR, folder_name)
@@ -401,12 +416,11 @@ class LessonAdmin(ModelView, model=Lesson):
                 data["video_status"] = "pending"
                 request.state.run_ffmpeg = True
             else:
-                # 🟢 اگر فایلی آپلود نشده بود:
                 if is_created:
-                    # اگر در حال ساخت جلسه جدید هستیم، خطا می‌دهیم چون ویدیو اجباری است
                     raise ValueError("آپلود فایل ویدیو برای ایجاد جلسه جدید الزامی است!")
                 else:
-                    # اگر در حال ویرایش هستیم، فیلد ویدیو و وضعیت را حذف می‌کنیم تا مقادیر قبلی دیتابیس حفظ شوند
+                    # 🟢 اگر در حال ویرایش بود و فایلی انتخاب نشد، فیلدها را حذف می‌کنیم
+                    # تا مقادیر قبلی ویدیوی موجود در دیتابیس کاملاً دست‌نخورده باقی بمانند.
                     data.pop("video_url", None)
                     data.pop("video_status", None)
 
