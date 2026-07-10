@@ -45,6 +45,10 @@ class Lesson(Base):
     sort_order = Column(Integer, default=1)  # ترتیب نمایش ویدیوها (قسمت ۱، ۲ و...)
     is_free = Column(Boolean, default=False)  # آیا برای پیش‌نمایش رایگان است؟
 
+    # 🟢 فیلد جدید برای تشخیص وضعیت تبدیل ویدیو توسط FFmpeg
+    # مقادیر استاندارد: pending (در انتظار) | processing (در حال تبدیل) | completed (موفق) | failed (خطا)
+    video_status = Column(String, default="pending", nullable=False)
+
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # رابطه معکوس با دوره

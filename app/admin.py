@@ -15,6 +15,7 @@ from wtforms.widgets import FileInput
 # این خط را پیدا کنید و get_password_hash را به آن اضافه کنید:
 from app.core.security import verify_password, create_access_token, SECRET_KEY, ALGORITHM, get_password_hash
 from app.modules.highlights.models import HighlightItem, HighlightCategory
+from wtforms.validators import Optional
 
 # پچ کردن باگ WTForms روی پایتون 3.14 برای حل ارور BooleanInputWidget
 try:
@@ -48,6 +49,8 @@ import subprocess
 PRIVATE_VIDEO_DIR = "app/private_assets/courses/videos"
 os.makedirs(PRIVATE_VIDEO_DIR, exist_ok=True)
 
+video_executor = ThreadPoolExecutor(max_workers=1)
+
 
 # =========================================================================
 # تابع کمکی برای تبدیل تاریخ میلادی دیتابیس به شمسی برای نمایش در پنل
@@ -77,33 +80,63 @@ def translate_status(status_en):
 
 
 # تابع تبدیل ویدیو به HLS (دقیقاً مشابه روتر شما)
-def process_video_to_hls(input_video_path: str, output_dir: str):
-    playlist_path = os.path.join(output_dir, "playlist.m3u8")
-    segment_path = os.path.join(output_dir, "segment_%03d.ts")
-
-    command = [
-        "ffmpeg",
-        "-i", input_video_path,
-        "-profile:v", "baseline",
-        "-level", "3.0",
-        "-start_number", "0",
-        "-hls_time", "10",
-        "-hls_list_size", "0",
-        "-hls_playlist_type", "vod",
-        "-f", "hls",
-        "-hls_segment_filename", segment_path,
-        playlist_path
-    ]
-
+# تابع تبدیل ویدیو به HLS (آپدیت شده با چرخه وضعیت دیتابیس)
+def process_video_to_hls(lesson_id: int, input_video_path: str, output_dir: str):
+    db = SessionLocal()
     try:
-        subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        # پاک کردن فایل حجیم mp4 پس از تبدیل موفق
-        if os.path.exists(input_video_path):
-            os.remove(input_video_path)
-        print(f"✅ تبدیل ویدیو با موفقیت تمام شد: {output_dir}")
-    except subprocess.CalledProcessError as e:
-        error_msg = e.stderr.decode()
-        print(f"❌ خطا در تبدیل ویدیو به HLS: {error_msg}")
+        # ۱. به محض ورود، وضعیت این درس را به "در حال پردازش" تغییر می‌دهیم
+        lesson = db.query(Lesson).filter(Lesson.id == lesson_id).first()
+        if lesson:
+            lesson.video_status = "processing"
+            db.commit()
+
+        playlist_path = os.path.join(output_dir, "playlist.m3u8")
+        segment_path = os.path.join(output_dir, "segment_%03d.ts")
+
+        command = [
+            "ffmpeg",
+            "-i", input_video_path,
+            "-profile:v", "baseline",
+            "-level", "3.0",
+            "-start_number", "0",
+            "-hls_time", "10",
+            "-hls_list_size", "0",
+            "-hls_playlist_type", "vod",
+            "-f", "hls",
+            "-hls_segment_filename", segment_path,
+            playlist_path
+        ]
+
+        # اجرای دستور بدون check=True تا اگر خطا داد اسکریپت کرش نکند و بتونیم خطا رو بگیریم
+        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        # بازخوانی درس برای اعمال وضعیت نهایی
+        lesson = db.query(Lesson).filter(Lesson.id == lesson_id).first()
+
+        if result.returncode == 0:
+            # ۲. اگر تبدیل موفقیت‌آمیز بود وضعیت "تکمیل شده" می‌شود
+            if os.path.exists(input_video_path):
+                os.remove(input_video_path)
+            if lesson:
+                lesson.video_status = "completed"
+            print(f"✅ تبدیل ویدیو با موفقیت تمام شد: {output_dir}")
+        else:
+            # ۳. اگر خود FFmpeg خطا داد وضعیت "ناموفق" می‌شود
+            if lesson:
+                lesson.video_status = "failed"
+            print(f"❌ خطا در تبدیل ویدیو به HLS: {result.stderr.decode()}")
+
+        db.commit()
+
+    except Exception as e:
+        # ۴. در صورت خطاهای غیرمنتظره سیستمی هم وضعیت به "ناموفق" تغییر کند تا ادمین متوجه شود
+        print(f"❌ خطای غیرمنتظره در پردازش ویدیو: {e}")
+        lesson = db.query(Lesson).filter(Lesson.id == lesson_id).first()
+        if lesson:
+            lesson.video_status = "failed"
+            db.commit()
+    finally:
+        db.close()
 
 
 # =========================================================================
@@ -310,20 +343,33 @@ class LessonAdmin(ModelView, model=Lesson):
     icon = "fa-solid fa-video"
     list_template = "custom_list.html"
 
-    column_list = ["id", "course", "title", "duration", "sort_order", "is_free", "created_at"]
+    column_list = ["id", "course", "title", "duration", "sort_order", "is_free", "video_status", "created_at"]
     column_searchable_list = ["title"]
     form_columns = ["course", "title", "description", "video_url", "duration", "sort_order", "is_free"]
-    # 🔴 برای بخش جلسات:
+
     column_formatters = {
-        Lesson.created_at: lambda m, a: to_shamsi(m.created_at)
+        Lesson.created_at: lambda m, a: to_shamsi(m.created_at),
+        Lesson.video_status: lambda m, a: {
+            "pending": "⏳ در انتظار",
+            "processing": "⚙️ در حال پردازش",
+            "completed": "✅ آماده نمایش",
+            "failed": "❌ خطا در پردازش"
+        }.get(m.video_status, m.video_status)
     }
+
     column_formatters_detail = {
         Lesson.created_at: lambda m, a: to_shamsi(m.created_at)
     }
-    form_overrides = {"video_url": FileField}
-    form_args = {"video_url": {"widget": FileInput()}}
 
-    # برای اضافه شدن نوار پیشرفت (پروگرس بار مرحله قبل)
+    # 🟢 اصلاح این بخش: اضافه کردن Optional به وانیتدیتورها برای جلوگیری از ارور فیلد اجباری در هنگام ویرایش
+    form_overrides = {"video_url": FileField}
+    form_args = {
+        "video_url": {
+            "widget": FileInput(),
+            "validators": [Optional()]  # باعث می‌شود سیستم در فرم به خالی بودن فایل ایراد نگیرد
+        }
+    }
+
     create_template = "custom_create.html"
     edit_template = "custom_edit.html"
 
@@ -331,36 +377,48 @@ class LessonAdmin(ModelView, model=Lesson):
         "id": "شناسه ویدیو", "course": "دوره آموزشی مرتبط", "title": "عنوان این جلسه",
         "description": "خلاصه توضیحات جلسه", "video_url": "آپلود فایل ویدیو (MP4)",
         "duration": "مدت زمان (دقیقه)", "sort_order": "شماره قسمت", "is_free": "قسمت معرفی (رایگان)",
-        "created_at": "تاریخ ثبت"
+        "video_status": "وضعیت پردازش ویدیو", "created_at": "تاریخ ثبت"
     }
 
+    # مرحله اول: قبل از ثبت دیتابیس
     async def on_model_change(self, data: dict, model: Any, is_created: bool, request: Request) -> None:
         if "video_url" in data:
             val = data["video_url"]
+
+            # چک می‌کنیم که آیا فایلی واقعاً آپلود شده است یا خیر
             if hasattr(val, "filename") and val.filename:
-                # 🔴 ۱. ساخت نام پوشه یکتا برای این درس
                 folder_name = f"lesson_{int(time.time())}_{uuid.uuid4().hex[:6]}"
                 lesson_dir = os.path.join(PRIVATE_VIDEO_DIR, folder_name)
                 os.makedirs(lesson_dir, exist_ok=True)
 
                 temp_video_path = os.path.join(lesson_dir, "raw_video.mp4")
 
-                # 🔴 ۲. ذخیره فایل خام (mp4) به صورت تکه‌تکه در پوشه private
                 with open(temp_video_path, "wb") as f:
                     while chunk := await val.read(1024 * 1024):
                         f.write(chunk)
 
-                # 🔴 ۳. ذخیره اسم "پوشه" در دیتابیس به جای کل مسیر (برای سازگاری با روتر اپلیکیشن)
                 data["video_url"] = folder_name
-
-                # 🔴 ۴. ارسال عملیات سنگین FFmpeg به پس‌زمینه (Background Thread)
-                # با این کار پنل ادمین فوراً ذخیره می‌شود و ویدیو در بک‌گراند کانورت می‌شود
-                loop = asyncio.get_running_loop()
-                loop.run_in_executor(None, process_video_to_hls, temp_video_path, lesson_dir)
-
+                data["video_status"] = "pending"
+                request.state.run_ffmpeg = True
             else:
-                # در صورت ویرایش درس و عدم آپلود ویدیوی جدید، مقدار قبلی دیتابیس دست نخورده بماند
-                data.pop("video_url", None)
+                # 🟢 اگر فایلی آپلود نشده بود:
+                if is_created:
+                    # اگر در حال ساخت جلسه جدید هستیم، خطا می‌دهیم چون ویدیو اجباری است
+                    raise ValueError("آپلود فایل ویدیو برای ایجاد جلسه جدید الزامی است!")
+                else:
+                    # اگر در حال ویرایش هستیم، فیلد ویدیو و وضعیت را حذف می‌کنیم تا مقادیر قبلی دیتابیس حفظ شوند
+                    data.pop("video_url", None)
+                    data.pop("video_status", None)
+
+    # مرحله دوم: بعد از ثبت قطعی دیتابیس
+    async def after_model_change(self, data: dict, model: Any, is_created: bool, request: Request) -> None:
+        if getattr(request.state, "run_ffmpeg", False):
+            folder_name = model.video_url
+            lesson_dir = os.path.join(PRIVATE_VIDEO_DIR, folder_name)
+            temp_video_path = os.path.join(lesson_dir, "raw_video.mp4")
+
+            loop = asyncio.get_running_loop()
+            loop.run_in_executor(video_executor, process_video_to_hls, model.id, temp_video_path, lesson_dir)
 
 
 # =========================================================================
