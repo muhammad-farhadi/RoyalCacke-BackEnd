@@ -111,6 +111,8 @@ def process_video_to_hls(lesson_id: int, input_video_path: str, output_dir: str)
         command = [
             "ffmpeg",
             "-i", input_video_path,
+            "-threads", "1",  # 🔴 تغییر مهم: استفاده فقط از یک هسته پردازشی برای جلوگیری از انفجار رم
+            "-preset", "veryfast",  # 🔴 تغییر مهم: سبک‌ترین حالت پردازش تصویر برای سرعت و مصرف رم بهینه
             "-profile:v", "baseline",
             "-level", "3.0",
             "-start_number", "0",
@@ -351,6 +353,17 @@ class CourseAdmin(ModelView, model=Course):
             else:
                 data.pop("image_url", None)
 
+    # 🟢 هوک جدید: حذف فیزیکی تمام ویدیوهای دوره در صورت حذف خود دوره
+    async def on_model_delete(self, model: Any, request: Request) -> None:
+        import shutil
+        # تک‌تک جلسات این دوره را بررسی می‌کند و پوشه ویدیوهایشان را پاک می‌کند
+        for lesson in model.lessons:
+            if lesson.video_url:
+                lesson_dir = os.path.join(PRIVATE_VIDEO_DIR, lesson.video_url)
+                if os.path.exists(lesson_dir):
+                    shutil.rmtree(lesson_dir)
+                    print(f"🗑️ پوشه ویدیوهای جلسه '{lesson.title}' به علت حذف دوره پاک شد.")
+
 
 class LessonAdmin(ModelView, model=Lesson):
     name = "جلسه"
@@ -358,9 +371,12 @@ class LessonAdmin(ModelView, model=Lesson):
     icon = "fa-solid fa-video"
     list_template = "custom_list.html"
 
+    # در جدول اصلی duration (مدت زمان) نمایش داده می‌شود
     column_list = ["id", "course", "title", "duration", "sort_order", "is_free", "video_status", "created_at"]
     column_searchable_list = ["title"]
-    form_columns = ["course", "title", "description", "video_url", "duration", "sort_order", "is_free"]
+
+    # 🟢 تغییر ۱: فیلد duration را از form_columns حذف کردیم تا دیگر نیازی به وارد کردن دستی نباشد
+    form_columns = ["course", "title", "description", "video_url", "sort_order", "is_free"]
 
     column_formatters = {
         Lesson.created_at: lambda m, a: to_shamsi(m.created_at),
@@ -377,11 +393,9 @@ class LessonAdmin(ModelView, model=Lesson):
     }
 
     form_overrides = {"video_url": FileField}
-
-    # 🟢 آپدیت این بخش: استفاده از ویجت سفارشی جدیدمان
     form_args = {
         "video_url": {
-            "widget": OptionalFileInput(),  # استفاده از ویجت فیلترکننده تگ required
+            "widget": OptionalFileInput(),
             "validators": [Optional()]
         }
     }
@@ -396,7 +410,7 @@ class LessonAdmin(ModelView, model=Lesson):
         "video_status": "وضعیت پردازش ویدیو", "created_at": "تاریخ ثبت"
     }
 
-    # مرحله اول: قبل از ثبت دیتابیس
+    # مرحله اول: قبل از ثبت دیتابیس (ذخیره فایل و تشخیص خودکار تایم ویدیو)
     async def on_model_change(self, data: dict, model: Any, is_created: bool, request: Request) -> None:
         if "video_url" in data:
             val = data["video_url"]
@@ -415,14 +429,34 @@ class LessonAdmin(ModelView, model=Lesson):
                 data["video_url"] = folder_name
                 data["video_status"] = "pending"
                 request.state.run_ffmpeg = True
+
+                # 🟢 بهینه‌سازی خواندن مدت زمان ویدیو
+                try:
+                    ffprobe_cmd = [
+                        "ffprobe", "-v", "error",
+                        "-show_entries", "format=duration",
+                        "-of", "default=noprint_wrappers=1:nokey=1",
+                        temp_video_path
+                    ]
+                    result = subprocess.run(ffprobe_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                                            timeout=10)  # 🔴 اضافه کردن تایم‌اوت
+                    if result.returncode == 0 and result.stdout.strip():
+                        seconds = float(result.stdout.strip())
+                        minutes = max(1, round(seconds / 60))
+                        data["duration"] = minutes
+                    else:
+                        data["duration"] = 0
+                except Exception as e:
+                    print(f"❌ خطا در اجرای ffprobe: {e}")
+                    data["duration"] = 0
             else:
                 if is_created:
                     raise ValueError("آپلود فایل ویدیو برای ایجاد جلسه جدید الزامی است!")
                 else:
-                    # 🟢 اگر در حال ویرایش بود و فایلی انتخاب نشد، فیلدها را حذف می‌کنیم
-                    # تا مقادیر قبلی ویدیوی موجود در دیتابیس کاملاً دست‌نخورده باقی بمانند.
                     data.pop("video_url", None)
                     data.pop("video_status", None)
+                    # فیلد duration را هم حذف می‌کنیم تا در صورت ویرایش متون، مدت زمان قبلی پاک نشود
+                    data.pop("duration", None)
 
     # مرحله دوم: بعد از ثبت قطعی دیتابیس
     async def after_model_change(self, data: dict, model: Any, is_created: bool, request: Request) -> None:
@@ -433,6 +467,15 @@ class LessonAdmin(ModelView, model=Lesson):
 
             loop = asyncio.get_running_loop()
             loop.run_in_executor(video_executor, process_video_to_hls, model.id, temp_video_path, lesson_dir)
+
+    # حذف فیزیکی پوشه ویدیو
+    async def on_model_delete(self, model: Any, request: Request) -> None:
+        import shutil
+        if model.video_url:
+            lesson_dir = os.path.join(PRIVATE_VIDEO_DIR, model.video_url)
+            if os.path.exists(lesson_dir):
+                shutil.rmtree(lesson_dir)
+                print(f"🗑️ پوشه فیزیکی جلسه با موفقیت حذف شد: {lesson_dir}")
 
 
 # =========================================================================
