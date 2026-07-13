@@ -49,6 +49,8 @@ class Lesson(Base):
     # مقادیر استاندارد: pending (در انتظار) | processing (در حال تبدیل) | completed (موفق) | failed (خطا)
     video_status = Column(String, default="pending", nullable=False)
 
+    cover_url = Column(String, nullable=True)
+
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # رابطه معکوس با دوره

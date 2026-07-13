@@ -107,6 +107,7 @@ class Enrollment(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     # 🔴 این خط را به انتهای کلاس اضافه کنید تا دیتابیس مشتری را بشناسد
     user = relationship("User")
+    course = relationship("Course")
     
     def __str__(self):
         return self.user_id

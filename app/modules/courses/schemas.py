@@ -21,6 +21,7 @@ class LessonResponse(LessonBase):
     id: int
     course_id: int
     video_url: str
+    cover_url: Optional[str] = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

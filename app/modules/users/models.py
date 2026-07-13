@@ -46,7 +46,7 @@ class User(Base):
     roles = relationship("Role", secondary=user_roles, back_populates="users")
 
     def __str__(self):
-        return self.full_name
+        return f"{self.full_name}-{self.phone_number}"
 
 
 class Role(Base):

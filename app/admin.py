@@ -371,12 +371,13 @@ class LessonAdmin(ModelView, model=Lesson):
     icon = "fa-solid fa-video"
     list_template = "custom_list.html"
 
-    # در جدول اصلی duration (مدت زمان) نمایش داده می‌شود
-    column_list = ["id", "course", "title", "duration", "sort_order", "is_free", "video_status", "created_at"]
+    # اضافه شدن cover_url به لیست ستون‌های جدول
+    column_list = ["id", "course", "title", "cover_url", "duration", "sort_order", "is_free", "video_status",
+                   "created_at"]
     column_searchable_list = ["title"]
 
-    # 🟢 تغییر ۱: فیلد duration را از form_columns حذف کردیم تا دیگر نیازی به وارد کردن دستی نباشد
-    form_columns = ["course", "title", "description", "video_url", "sort_order", "is_free"]
+    # اضافه شدن cover_url به فیلدهای فرم آپلود/ویرایش
+    form_columns = ["course", "title", "description", "cover_url", "video_url", "sort_order", "is_free"]
 
     column_formatters = {
         Lesson.created_at: lambda m, a: to_shamsi(m.created_at),
@@ -385,16 +386,32 @@ class LessonAdmin(ModelView, model=Lesson):
             "processing": "⚙️ در حال پردازش",
             "completed": "✅ آماده نمایش",
             "failed": "❌ خطا در پردازش"
-        }.get(m.video_status, m.video_status)
+        }.get(m.video_status, m.video_status),
+        # رندر کردن عکس کاور در جدول برای زیبایی و مدیریت بهتر
+        "cover_url": lambda m, a: Markup(
+            f'<a href="{m.cover_url}" target="_blank">'
+            f'<img src="{m.cover_url}" style="max-height: 45px; border-radius: 6px; object-fit: cover; border: 1px solid #ddd;" />'
+            f'</a>'
+        ) if getattr(m, "cover_url", None) else "بدون کاور"
     }
 
     column_formatters_detail = {
         Lesson.created_at: lambda m, a: to_shamsi(m.created_at)
     }
 
-    form_overrides = {"video_url": FileField}
+    # معرفی هر دو فیلد کاور و ویدیو به عنوان FileField به فرم‌ساز
+    form_overrides = {
+        "video_url": FileField,
+        "cover_url": FileField
+    }
+
+    # اختیاری کردن هر دو فیلد هنگام ویرایش برای جلوگیری از خطای مرورگر
     form_args = {
         "video_url": {
+            "widget": OptionalFileInput(),
+            "validators": [Optional()]
+        },
+        "cover_url": {
             "widget": OptionalFileInput(),
             "validators": [Optional()]
         }
@@ -405,13 +422,30 @@ class LessonAdmin(ModelView, model=Lesson):
 
     column_labels = {
         "id": "شناسه ویدیو", "course": "دوره آموزشی مرتبط", "title": "عنوان این جلسه",
-        "description": "خلاصه توضیحات جلسه", "video_url": "آپلود فایل ویدیو (MP4)",
+        "description": "خلاصه توضیحات جلسه",
+        "cover_url": "عکس کاور جلسه",  # لیبل جدید
+        "video_url": "آپلود فایل ویدیو (MP4)",
         "duration": "مدت زمان (دقیقه)", "sort_order": "شماره قسمت", "is_free": "قسمت معرفی (رایگان)",
         "video_status": "وضعیت پردازش ویدیو", "created_at": "تاریخ ثبت"
     }
 
-    # مرحله اول: قبل از ثبت دیتابیس (ذخیره فایل و تشخیص خودکار تایم ویدیو)
     async def on_model_change(self, data: dict, model: Any, is_created: bool, request: Request) -> None:
+        # ۱. پردازش و ذخیره عکس کاور (بخش جدید)
+        if "cover_url" in data:
+            cover_val = data["cover_url"]
+            # بررسی اینکه آیا فایل جدیدی آپلود شده است
+            if hasattr(cover_val, "filename") and cover_val.filename:
+                # استفاده از تابع کمکی موجود برای ذخیره عکس
+                file_path = await save_uploaded_file(cover_val, "courses/lessons/covers")
+                if file_path:
+                    data["cover_url"] = file_path
+                else:
+                    data.pop("cover_url", None)
+            else:
+                # اگر فایلی آپلود نشده، کلید را حذف می‌کنیم تا مقدار قبلی در دیتابیس پاک نشود
+                data.pop("cover_url", None)
+
+        # ۲. پردازش و ذخیره ویدیو (کد دست‌نخورده قبلی)
         if "video_url" in data:
             val = data["video_url"]
 
@@ -430,7 +464,6 @@ class LessonAdmin(ModelView, model=Lesson):
                 data["video_status"] = "pending"
                 request.state.run_ffmpeg = True
 
-                # 🟢 بهینه‌سازی خواندن مدت زمان ویدیو
                 try:
                     ffprobe_cmd = [
                         "ffprobe", "-v", "error",
@@ -439,7 +472,7 @@ class LessonAdmin(ModelView, model=Lesson):
                         temp_video_path
                     ]
                     result = subprocess.run(ffprobe_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
-                                            timeout=10)  # 🔴 اضافه کردن تایم‌اوت
+                                            timeout=10)
                     if result.returncode == 0 and result.stdout.strip():
                         seconds = float(result.stdout.strip())
                         minutes = max(1, round(seconds / 60))
@@ -455,10 +488,8 @@ class LessonAdmin(ModelView, model=Lesson):
                 else:
                     data.pop("video_url", None)
                     data.pop("video_status", None)
-                    # فیلد duration را هم حذف می‌کنیم تا در صورت ویرایش متون، مدت زمان قبلی پاک نشود
                     data.pop("duration", None)
 
-    # مرحله دوم: بعد از ثبت قطعی دیتابیس
     async def after_model_change(self, data: dict, model: Any, is_created: bool, request: Request) -> None:
         if getattr(request.state, "run_ffmpeg", False):
             folder_name = model.video_url
@@ -468,7 +499,6 @@ class LessonAdmin(ModelView, model=Lesson):
             loop = asyncio.get_running_loop()
             loop.run_in_executor(video_executor, process_video_to_hls, model.id, temp_video_path, lesson_dir)
 
-    # حذف فیزیکی پوشه ویدیو
     async def on_model_delete(self, model: Any, request: Request) -> None:
         import shutil
         if model.video_url:
@@ -567,25 +597,33 @@ class EnrollmentAdmin(ModelView, model=Enrollment):
     icon = "fa-solid fa-id-card"
     list_template = "custom_list.html"
 
-    # 🔴 تغییر ۱: نمایش شماره موبایل در جدول
-    column_list = ["id", "user.phone_number", "course_id", "purchased_price", "created_at"]
+    # نمایش عنوان دوره در جدول لیست دسترسی‌ها
+    column_list = ["id", "user.phone_number", "course.title", "purchased_price", "created_at"]
 
-    # 🔴 تغییر ۲: امکان جستجو بر اساس شماره موبایل و نام دانشجو
-    column_searchable_list = ["id", "user.phone_number", "user.full_name", "course_id"]
+    # امکان جستجو
+    column_searchable_list = ["id", "user.phone_number", "user.full_name"]
 
-    # 🔴 تغییر ۳: منوی کشویی برای انتخاب نام کاربری هنگام ایجاد دسترسی دستی
-    form_columns = ["user", "course_id", "purchased_price"]
+    # 🔴 استفاده از course (به جای course_id) برای ساخته شدن منوی کشویی
+    form_columns = ["user", "course", "purchased_price"]
+
+    # 🔴 اختیاری کردن مبلغ خرید (اگر خالی بماند، صفر رد می‌شود)
+    form_args = {
+        "purchased_price": {
+            "default": 0,
+            "validators": [Optional()]
+        }
+    }
 
     column_labels = {
         "id": "شناسه",
         "user": "انتخاب دانشجو",
         "user.phone_number": "موبایل دانشجو",
-        "course_id": "شناسه دوره",
-        "purchased_price": "مبلغ خرید",
+        "course": "انتخاب دوره",
+        "course.title": "عنوان دوره",
+        "purchased_price": "مبلغ خرید (تومان)",
         "created_at": "تاریخ دسترسی"
     }
 
-    # حفظ تاریخ شمسی از مرحله قبل
     column_formatters = {
         Enrollment.created_at: lambda m, a: to_shamsi(m.created_at)
     }
