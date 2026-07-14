@@ -12,6 +12,8 @@ from app.modules.courses.models import Course
 from . import schemas, services, models
 import random
 
+from .models import Enrollment
+
 router = APIRouter()
 
 # تنظیمات زرین‌پال (بهتر است بعداً به فایل .env منتقل شود)
@@ -380,3 +382,42 @@ def get_my_payments(
     دریافت لیست تمام پرداخت‌های موفق و ناموفق کاربر
     """
     return services.get_user_payments(db, current_user.id)
+
+
+@router.post("/{course_id}/enroll-free", status_code=status.HTTP_201_CREATED)
+def enroll_in_free_course(
+        course_id: int,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_active_user)  # اجبار کاربر به لاگین بودن
+):
+    # ۱. بررسی وجود داشتن دوره
+    course = db.query(Course).filter(Course.id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="دوره آموزشی یافت نشد.")
+
+    # ۲. بررسی اینکه دوره واقعاً رایگان باشد (قیمت صفر)
+    if course.price > 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="این دوره رایگان نیست و باید از طریق سبد خرید اقدام کنید."
+        )
+
+    # ۳. بررسی اینکه کاربر از قبل این دوره را فعال نکرده باشد
+    existing_enrollment = db.query(Enrollment).filter(
+        Enrollment.user_id == current_user.id,
+        Enrollment.course_id == course_id
+    ).first()
+
+    if existing_enrollment:
+        return {"detail": "شما از قبل به این دوره دسترسی دارید."}
+
+    # ۴. صدور دسترسی مستقیم با مبلغ صفر ریال
+    new_enrollment = Enrollment(
+        user_id=current_user.id,
+        course_id=course_id,
+        purchased_price=0
+    )
+    db.add(new_enrollment)
+    db.commit()
+
+    return {"detail": "دوره رایگان با موفقیت برای شما فعال شد و به لیست دوره‌های من اضافه گردید."}

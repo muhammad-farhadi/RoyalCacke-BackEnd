@@ -1,5 +1,184 @@
 {% extends "sqladmin/create.html" %}
+
+{% block head %}
+{{ super() }}
+<!-- CSS ابزار کراپ عکس -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+<style>
+    /* استایل اختصاصی پاپ‌آپ خالص بدون وابستگی به بوت‌استرپ */
+    #customCropOverlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.75);
+        z-index: 999999;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .custom-crop-box {
+        background: #fff;
+        border-radius: 8px;
+        max-width: 750px;
+        width: 90%;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+    }
+
+    .custom-crop-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
+        background: #212529;
+        color: #fff;
+    }
+
+    .custom-crop-body {
+        padding: 20px;
+        max-height: 450px;
+        overflow: hidden;
+        text-align: center;
+    }
+
+    .custom-crop-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        padding: 15px 20px;
+        background: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+    }
+
+    #cropper-preview-img {
+        max-width: 100%;
+        max-height: 400px;
+        display: block;
+        margin: 0 auto;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-    {{ super() }}
-    {% include "upload_progress.html" %}
+{{ super() }}
+
+<!-- سیستم پروگرس بار شما کاملاً محفوظ و دست‌نخورده لود می‌شود -->
+{% include "upload_progress.html" %}
+
+<!-- 🟢 پاپ‌آپ اختصاصی و مستقل از سیستم تبلر/بوت‌استرپ -->
+<div id="customCropOverlay">
+    <div class="custom-crop-box">
+        <div class="custom-crop-header">
+            <h5 class="m-0" style="font-size: 16px;"><i class="fa-solid fa-crop-simple me-2"></i> تنظیم و برش منطقه
+                دلخواه عکس</h5>
+            <button type="button" id="custom-close-x"
+                    style="border:none; background:none; color:#fff; font-size:24px; cursor:pointer; line-height:1;">
+                &times;
+            </button>
+        </div>
+        <div class="custom-crop-body">
+            <img id="cropper-preview-img" src="" alt="Preview">
+        </div>
+        <div class="custom-crop-footer">
+            <button type="button" id="custom-cancel-btn" class="btn btn-secondary">انصراف</button>
+            <button type="button" id="crop-save-btn" class="btn btn-primary"><i class="fa-solid fa-scissors me-1"></i>
+                برش و اعمال تغییرات
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- اسکریپت ابزار کراپ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        let cropper = null;
+        let currentInput = null;
+
+        const overlay = document.getElementById('customCropOverlay');
+        const previewImg = document.getElementById('cropper-preview-img');
+        const saveBtn = document.getElementById('crop-save-btn');
+        const cancelBtn = document.getElementById('custom-cancel-btn');
+        const closeX = document.getElementById('custom-close-x');
+
+        const cropSpecs = {
+            "image_url": {aspect: 13 / 15, width: 520, height: 600}, // عکس اصلی دوره‌ها
+            "cover_url": {aspect: 19 / 13, width: 380, height: 260}  // کاور جلسات و کاور PDFها
+        };
+
+        // تابع کمکی بستن پاپ‌آپ و پاکسازی کراپ
+        function closeCropModal() {
+            overlay.style.display = 'none';
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+        }
+
+        cancelBtn.addEventListener('click', closeCropModal);
+        closeX.addEventListener('click', closeCropModal);
+
+        // مانیتور کردن اینپوت‌های فایل
+        document.querySelectorAll('input[type="file"]').forEach(input => {
+            input.addEventListener('change', function (e) {
+                const spec = cropSpecs[input.name];
+                if (!spec) return;
+
+                const files = e.target.files;
+                if (files && files.length > 0) {
+                    currentInput = input;
+                    const file = files[0];
+                    if (!file.type.startsWith('image/')) return;
+
+                    const reader = new FileReader();
+                    reader.onload = function (event) {
+                        previewImg.src = event.target.result;
+
+                        // 🟢 باز کردن پاپ‌آپ با استایل مستقیم (بدون دخالت لایبرری تبلر)
+                        overlay.style.display = 'flex';
+
+                        // راه‌اندازی فوری کراپ به محض نمایان شدن تصویر
+                        cropper = new Cropper(previewImg, {
+                            aspectRatio: spec.aspect,
+                            viewMode: 1,
+                            dragMode: 'move',
+                            background: false,
+                            autoCropArea: 1,
+                            restore: false,
+                        });
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        });
+
+        // ذخیره و کراپ نهایی عکس
+        saveBtn.addEventListener('click', function () {
+            if (!cropper || !currentInput) return;
+            const spec = cropSpecs[currentInput.name];
+
+            const canvas = cropper.getCroppedCanvas({
+                width: spec.width,
+                height: spec.height,
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high'
+            });
+
+            canvas.toBlob(function (blob) {
+                const originalFileName = currentInput.files[0].name;
+                const croppedFile = new File([blob], originalFileName, {type: 'image/jpeg'});
+
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(croppedFile);
+                currentInput.files = dataTransfer.files;
+
+                // بستن فرم
+                closeCropModal();
+            }, 'image/jpeg', 0.9);
+        });
+    });
+</script>
 {% endblock %}

@@ -33,7 +33,7 @@ from app.core.security import verify_password, create_access_token, SECRET_KEY, 
 # ایمپورت تمامی مدل‌های پروژه شما
 from app.modules.users.models import User, Role, Permission
 from app.modules.articles.models import Article
-from app.modules.courses.models import Course, Lesson, CourseReview
+from app.modules.courses.models import Course, Lesson, CourseReview, CourseDocument
 from app.modules.gallery.models import GalleryItem
 from app.modules.index.models import ContactMessage
 from app.modules.orders.models import Cart, CartItem, Discount, Order, OrderItem, Payment, Enrollment
@@ -48,6 +48,8 @@ import subprocess
 
 # مسیر امن ذخیره ویدیوها (همان مسیری که در روتر داشتید)
 PRIVATE_VIDEO_DIR = "app/private_assets/courses/videos"
+PRIVATE_DOC_DIR = "app/private_assets/courses/docs"
+os.makedirs(PRIVATE_DOC_DIR, exist_ok=True)
 os.makedirs(PRIVATE_VIDEO_DIR, exist_ok=True)
 
 video_executor = ThreadPoolExecutor(max_workers=1)
@@ -326,6 +328,9 @@ class CourseAdmin(ModelView, model=Course):
     icon = "fa-solid fa-graduation-cap"
     list_template = "custom_list.html"
 
+    create_template = "custom_create.html"
+    edit_template = "custom_edit.html"
+
     column_list = ["id", "title", "price", "category", "session_count", "total_hours", "is_published"]
     column_searchable_list = ["title", "category"]
     form_columns = ["title", "description", "price", "session_count", "total_hours", "category", "level", "image_url",
@@ -506,6 +511,106 @@ class LessonAdmin(ModelView, model=Lesson):
             if os.path.exists(lesson_dir):
                 shutil.rmtree(lesson_dir)
                 print(f"🗑️ پوشه فیزیکی جلسه با موفقیت حذف شد: {lesson_dir}")
+
+
+# ۲. کلاس داکیومنت‌ها برای مدیریت و آپلود فایل‌ها
+class CourseDocumentAdmin(ModelView, model=CourseDocument):
+    name = "فایل آموزشی"
+    name_plural = "۴.۵. فایل‌های متنی و PDF دوره‌ها"
+    icon = "fa-solid fa-file-pdf"
+    list_template = "custom_list.html"
+
+    create_template = "custom_create.html"
+    edit_template = "custom_edit.html"
+
+    # اضافه شدن cover_url به لیست ستون‌های جدول ادمین
+    column_list = ["id", "course.title", "title", "cover_url", "created_at"]
+    column_searchable_list = ["title", "course.title"]
+
+    # اضافه شدن cover_url به فیلدهای فرم ادمین
+    form_columns = ["course", "title", "file_name", "cover_url"]
+
+    # معرفی فیلد کاور به عنوان فایل به فرم‌ساز
+    form_overrides = {
+        "file_name": FileField,
+        "cover_url": FileField
+    }
+    form_args = {
+        "file_name": {
+            "widget": OptionalFileInput(),
+            "validators": [Optional()]
+        },
+        "cover_url": {
+            "widget": OptionalFileInput(),
+            "validators": [Optional()]
+        }
+    }
+
+    column_labels = {
+        "id": "شناسه فایل",
+        "course": "انتخاب دوره آموزشی",
+        "course.title": "دوره مرتبط",
+        "title": "عنوان فایل (نمایش به دانشجو)",
+        "file_name": "آپلود فایل PDF",
+        "cover_url": "آپلود عکس کاور این فایل",  # لیبل جدید
+        "created_at": "تاریخ آپلود"
+    }
+
+    column_formatters = {
+        CourseDocument.created_at: lambda m, a: to_shamsi(m.created_at),
+        # 🔴 رندر کردن عکس کاور فایل در جدول ادمین پنل
+        "cover_url": lambda m, a: Markup(
+            f'<a href="{m.cover_url}" target="_blank">'
+            f'<img src="{m.cover_url}" style="max-height: 45px; border-radius: 6px; object-fit: cover; border: 1px solid #ddd;" />'
+            f'</a>'
+        ) if getattr(m, "cover_url", None) else "بدون کاور"
+    }
+
+    async def on_model_change(self, data: dict, model: CourseDocument, is_created: bool, request: Request) -> None:
+        # 🔴 ۱. پردازش و ذخیره عکس کاور فایل PDF (بخش جدید)
+        if "cover_url" in data:
+            cover_val = data["cover_url"]
+            if isinstance(cover_val, UploadFile) and cover_val.filename:
+                file_path = await save_uploaded_file(cover_val, "courses/docs/covers")
+                if file_path:
+                    data["cover_url"] = file_path
+                else:
+                    data.pop("cover_url", None)
+            else:
+                data.pop("cover_url", None)
+
+        # ۲. پردازش فایل PDF امن (کد قبلی بدون تغییر)
+        if "file_name" in data:
+            file_val = data["file_name"]
+            if isinstance(file_val, UploadFile) and file_val.filename:
+                ext = os.path.splitext(file_val.filename)[1].lower()
+                if ext != ".pdf":
+                    raise ValueError("فقط آپلود فایل با فرمت PDF مجاز است!")
+
+                unique_filename = f"doc_{uuid.uuid4().hex}{ext}"
+                dest_path = os.path.join(PRIVATE_DOC_DIR, unique_filename)
+
+                with open(dest_path, "wb") as f:
+                    while chunk := await file_val.read(1024 * 1024):
+                        f.write(chunk)
+
+                data["file_name"] = unique_filename
+            else:
+                if is_created:
+                    raise ValueError("آپلود فایل PDF الزامی است.")
+                data.pop("file_name", None)
+
+    async def on_model_delete(self, model: CourseDocument, request: Request) -> None:
+        if model.file_name:
+            file_path = os.path.join(PRIVATE_DOC_DIR, model.file_name)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+
+        # 🔴 حذف فیزیکی عکس کاور فایل در صورت حذف خود فایل
+        if getattr(model, "cover_url", None):
+            old_cover_path = f"app{model.cover_url}"
+            if os.path.exists(old_cover_path):
+                os.remove(old_cover_path)
 
 
 # =========================================================================
@@ -852,9 +957,6 @@ class CourseReviewAdmin(ModelView, model=CourseReview):
 # =========================================================================
 # پچ طلایی برای جلوگیری از کرش کردن هسته SQLAdmin هنگام ویرایش فایلی
 # =========================================================================
-# =========================================================================
-# پچ طلایی برای جلوگیری از کرش کردن هسته SQLAdmin هنگام ویرایش فایلی
-# =========================================================================
 def apply_sqladmin_patch():
     original_handle_form_data = Admin._handle_form_data
 
@@ -996,6 +1098,7 @@ def init_admin(app):
     admin.add_view(PermissionAdmin)
     admin.add_view(CourseAdmin)
     admin.add_view(LessonAdmin)
+    admin.add_view(CourseDocumentAdmin)
     admin.add_view(OrderAdmin)
     admin.add_view(OrderItemAdmin)
     admin.add_view(PaymentAdmin)

@@ -56,11 +56,21 @@ class CourseUpdate(BaseModel):
     is_published: Optional[bool] = None
 
 
+class CourseDocumentResponse(BaseModel):
+    id: int
+    course_id: int
+    title: str
+    cover_url: Optional[str] = None  # 🔴 اضافه شدن این خط برای فرستادن عکس کاور به فرانت
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
 # خروجی کامل دوره به همراه لیست ویدیوها
 class CourseResponse(CourseBase):
     id: int
     image_url: Optional[str] = None
-    lessons: List[LessonResponse] = []  # تزریق خودکار ویدیوها به دوره
+    lessons: List[LessonResponse] = []
+    documents: List[CourseDocumentResponse] = []
     created_at: datetime
     updated_at: datetime
 

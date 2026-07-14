@@ -4,7 +4,6 @@ import subprocess
 import time
 import shutil
 from datetime import timedelta, datetime
-from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, BackgroundTasks, Query
 from fastapi.responses import FileResponse
 from jose import jwt
@@ -14,10 +13,9 @@ from typing import List, Optional
 from starlette.responses import PlainTextResponse
 
 from app.core.database import get_db
-# شما باید get_current_user را در فایل dependencies.py خود داشته باشید
-from app.core.dependencies import RequirePermission, get_current_user
-from app.modules.orders.models import Enrollment  # برای بررسی دسترسی کاربر به دوره
-from app.modules.courses.models import Lesson, CourseReview  # برای کوئری مستقیم جلسات
+from app.core.dependencies import RequirePermission, get_current_active_user
+from app.modules.orders.models import Enrollment
+from app.modules.courses.models import Lesson, CourseReview, Course, CourseDocument
 from . import schemas, services
 from .schemas import ReviewResponseSchema
 from ..users.models import User
@@ -77,8 +75,22 @@ def process_video_to_hls(input_video_path: str, output_dir: str):
 
 
 @router.get("/", response_model=List[schemas.CourseResponse])
-def read_all_courses(category: Optional[str] = None, skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-    return services.get_courses(db, category=category, only_published=True, skip=skip, limit=limit)
+def read_all_courses(
+        category: Optional[str] = None,
+        is_free: Optional[bool] = Query(None, description="فیلتر دوره‌های رایگان (true) یا پولی (false)"),
+        skip: int = 0,
+        limit: int = 10,
+        db: Session = Depends(get_db)
+):
+    query = db.query(Course).filter(Course.is_published == True)
+    if category:
+        query = query.filter(Course.category == category)
+    if is_free is not None:
+        if is_free:
+            query = query.filter(Course.price == 0)
+        else:
+            query = query.filter(Course.price > 0)
+    return query.order_by(Course.created_at.desc()).offset(skip).limit(limit).all()
 
 
 @router.get("/{course_id}", response_model=schemas.CourseResponse)
@@ -232,7 +244,7 @@ def remove_course(course_id: int, db: Session = Depends(get_db),
 
 
 @router.get("/{lesson_id}/stream-ticket")
-def get_stream_ticket(lesson_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+def get_stream_ticket(lesson_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     # ۱. پیدا کردن جلسه و بررسی دسترسی کاربر (دقیقاً مثل کدهای قبلی خودتون)
     lesson = db.query(Lesson).filter(Lesson.id == lesson_id).first()
     if not lesson:
@@ -277,7 +289,7 @@ async def submit_course_review(
         content: str = Form(...),
         image: Optional[UploadFile] = File(None),
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        current_user: User = Depends(get_current_active_user)
 ):
     # الف) بررسی اینکه آیا کاربر واقعاً این دوره را خریده است؟
     has_purchased = db.query(Enrollment).filter(
@@ -310,3 +322,38 @@ async def submit_course_review(
     db.commit()
 
     return {"detail": "نظر شما با موفقیت ثبت شد و پس از تایید مدیریت نمایش داده می‌شود."}
+
+
+@router.get("/docs/{doc_id}/pdf-view")
+def view_course_pdf(
+        doc_id: int,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_active_user)
+):
+    # ۱. پیدا کردن رکورد فایل
+    document = db.query(CourseDocument).filter(CourseDocument.id == doc_id).first()
+    if not document:
+        raise HTTPException(status_code=404, detail="فایل مورد نظر یافت نشد.")
+
+    has_access = db.query(Enrollment).filter(
+        Enrollment.user_id == current_user.id,
+        Enrollment.course_id == document.course_id
+    ).first()
+    if not has_access:
+        # اگر دوره رایگان باشد هم دسترسی باز است (منطق بررسی رایگان بودن دوره در صورت نیاز)
+        course = db.query(Course).filter(Course.id == document.course_id).first()
+        if course and course.price > 0:
+            raise HTTPException(status_code=403, detail="شما به فایل‌های این دوره دسترسی ندارید.")
+
+    # ۳. بررسی وجود فیزیکی فایل روی هارد سرور
+    pdf_path = os.path.join("app/private_assets/courses/docs", document.file_name)
+    if not os.path.exists(pdf_path):
+        raise HTTPException(status_code=404, detail="فایل فیزیکی جزوه روی سرور یافت نشد.")
+
+    # ۴. قفل کردن دانلود و اجبار به رندر درون برنامه‌ای (inline)
+    headers = {
+        "Content-Disposition": f"inline; filename={document.file_name}",
+        "Cache-Control": "no-cache, no-store, must-revalidate"
+    }
+
+    return FileResponse(path=pdf_path, media_type="application/pdf", headers=headers)

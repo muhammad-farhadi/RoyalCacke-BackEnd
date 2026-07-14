@@ -26,6 +26,23 @@ class Course(Base):
 
     # رابطه با جلسات دوره (در صورت حذف دوره، تمام ویدیوها هم حذف می‌شوند)
     lessons = relationship("Lesson", back_populates="course", cascade="all, delete-orphan")
+    documents = relationship("CourseDocument", back_populates="course", cascade="all, delete-orphan")
+
+    def __str__(self):
+        return self.title
+
+
+class CourseDocument(Base):
+    __tablename__ = "course_documents"
+
+    id = Column(Integer, primary_key=True, index=True)
+    course_id = Column(Integer, ForeignKey("courses.id", ondelete="CASCADE"), nullable=False)
+    title = Column(String, nullable=False)
+    file_name = Column(String, nullable=False)
+    cover_url = Column(String, nullable=True)  # 🔴 اضافه شدن این خط برای ذخیره عکس کاور فایل
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    course = relationship("Course", back_populates="documents")
 
     def __str__(self):
         return self.title

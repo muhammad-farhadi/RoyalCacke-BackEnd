@@ -9,11 +9,10 @@ from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import create_access_token, SECRET_KEY, ALGORITHM, create_refresh_token
-from app.core.dependencies import get_current_active_user, RequirePermission, get_current_user
+from app.core.dependencies import get_current_active_user, RequirePermission
 import random
 from datetime import datetime, timedelta, timezone
 from . import schemas, services, models
-from .models import User
 from .services import send_otp_sms
 
 router = APIRouter()
@@ -206,8 +205,6 @@ def resend_otp(data: schemas.ResendOTPRequest, db: Session = Depends(get_db)):
     user.otp_expire = datetime.now(timezone.utc) + timedelta(minutes=2)
     db.commit()
 
-    # ماک ارسال پیامک (در آینده اینجا به API کاوه نگار یا ملی پیامک وصل می‌شود)
-    # print(f"\n{'=' * 40}\n[SMS MOCK] ارسال مجدد کد تایید برای {user.phone_number}:\nکد: {otp}\n{'=' * 40}\n")
     send_otp_sms(user.phone_number, otp)
     return {"message": "کد تایید جدید با موفقیت به شماره شما ارسال شد."}
 

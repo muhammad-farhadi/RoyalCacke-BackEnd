@@ -11,7 +11,7 @@ import shutil
 from fastapi import UploadFile, File
 from app.core.database import get_db
 from app.core.security import ALGORITHM, SECRET_KEY
-from app.core.dependencies import get_current_user, RequirePermission
+from app.core.dependencies import RequirePermission, get_current_active_user
 from app.modules.users.models import User
 from jose import jwt, JWTError
 
@@ -29,7 +29,7 @@ os.makedirs(SUPPORT_MEDIA_DIR, exist_ok=True)
 # ==========================================
 
 @router.get("/history", response_model=List[schemas.MessageResponse])
-def get_user_chat_history(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def get_user_chat_history(db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
     """کاربر عادی تاریخچه چت خودش را می‌بیند"""
     messages = db.query(SupportMessage).filter(
         SupportMessage.room_user_id == current_user.id
@@ -78,7 +78,7 @@ def get_all_conversations(db: Session = Depends(get_db), current_user=Depends(Re
 def upload_chat_media(
         file: UploadFile = File(...),
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        current_user: User = Depends(get_current_active_user)
 ):
     """
     این API فایل را می‌گیرد و لینک آن را برمی‌گرداند تا در سوکت ارسال شود.
