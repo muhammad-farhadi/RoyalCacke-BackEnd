@@ -5,6 +5,7 @@
 <!-- CSS ابزار کراپ عکس -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
 <style>
+    /* استایل اختصاصی پاپ‌آ‌پ مستقل بدون وابستگی به بوت‌استرپ و تبلر */
     #customCropOverlay {
         display: none;
         position: fixed;
@@ -64,10 +65,10 @@
 {% block content %}
 {{ super() }}
 
-<!-- سیستم پروگرس بار شما بدون تغییر -->
+<!-- سیستم پروگرس بار شما بدون تغییر لود می‌شود -->
 {% include "upload_progress.html" %}
 
-<!-- پاپ‌آپ اختصاصی و مستقل از سیستم تبلر/بوت‌استرپ -->
+<!-- پاپ‌آ‌پ اختصاصی ابزار کراپ -->
 <div id="customCropOverlay">
     <div class="custom-crop-box">
         <div class="custom-crop-header">
@@ -90,12 +91,13 @@
     </div>
 </div>
 
-<!-- اسکریپت ابزار کراپ -->
+<!-- اسکریپت اصلی ابزار کراپ و منطق هوشمند ابعاد -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         let cropper = null;
         let currentInput = null;
+        let activeSpec = null;
 
         const overlay = document.getElementById('customCropOverlay');
         const previewImg = document.getElementById('cropper-preview-img');
@@ -105,6 +107,7 @@
 
         const cropSpecs = {
             "image_url": {aspect: 13 / 15, width: 520, height: 600},
+            "banner_image": {aspect: 16 / 9, width: 960, height: 540},
             "cover_url": {aspect: 19 / 13, width: 380, height: 260}
         };
 
@@ -121,12 +124,19 @@
 
         document.querySelectorAll('input[type="file"]').forEach(input => {
             input.addEventListener('change', function (e) {
-                const spec = cropSpecs[input.name];
+                let specName = input.name;
+
+                if (specName === "image_url" && document.querySelector('input[name="subtitle"]')) {
+                    specName = "banner_image";
+                }
+
+                const spec = cropSpecs[specName];
                 if (!spec) return;
 
                 const files = e.target.files;
                 if (files && files.length > 0) {
                     currentInput = input;
+                    activeSpec = spec;
                     const file = files[0];
                     if (!file.type.startsWith('image/')) return;
 
@@ -150,12 +160,11 @@
         });
 
         saveBtn.addEventListener('click', function () {
-            if (!cropper || !currentInput) return;
-            const spec = cropSpecs[currentInput.name];
+            if (!cropper || !currentInput || !activeSpec) return;
 
             const canvas = cropper.getCroppedCanvas({
-                width: spec.width,
-                height: spec.height,
+                width: activeSpec.width,
+                height: activeSpec.height,
                 imageSmoothingEnabled: true,
                 imageSmoothingQuality: 'high'
             });

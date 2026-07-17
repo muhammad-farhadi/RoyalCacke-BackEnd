@@ -17,6 +17,7 @@ from app.core.security import verify_password, create_access_token, SECRET_KEY, 
 from app.modules.highlights.models import HighlightItem, HighlightCategory
 from wtforms.validators import Optional
 from concurrent.futures import ThreadPoolExecutor
+from typing import Any
 
 # پچ کردن باگ WTForms روی پایتون 3.14 برای حل ارور BooleanInputWidget
 try:
@@ -33,9 +34,9 @@ from app.core.security import verify_password, create_access_token, SECRET_KEY, 
 # ایمپورت تمامی مدل‌های پروژه شما
 from app.modules.users.models import User, Role, Permission
 from app.modules.articles.models import Article
-from app.modules.courses.models import Course, Lesson, CourseReview, CourseDocument
+from app.modules.courses.models import Course, Lesson, CourseReview, CourseDocument, CourseImage
 from app.modules.gallery.models import GalleryItem
-from app.modules.index.models import ContactMessage
+from app.modules.index.models import ContactMessage, Banner
 from app.modules.orders.models import Cart, CartItem, Discount, Order, OrderItem, Payment, Enrollment
 from app.modules.support.models import SupportMessage
 
@@ -370,6 +371,69 @@ class CourseAdmin(ModelView, model=Course):
                     print(f"🗑️ پوشه ویدیوهای جلسه '{lesson.title}' به علت حذف دوره پاک شد.")
 
 
+# ۲. ساخت کلاس مدیریت آلبوم تصاویر دوره‌ها
+class CourseImageAdmin(ModelView, model=CourseImage):
+    name = "عکس آلبوم"
+    name_plural = "۴.۱. آلبوم تصاویر فرعی دوره‌ها"
+    icon = "fa-solid fa-image"
+    list_template = "custom_list.html"
+
+    # فعال‌سازی ابزار کراپ خودکار روی این صفحه
+    create_template = "custom_create.html"
+    edit_template = "custom_edit.html"
+
+    column_list = ["id", "course.title", "image_url", "created_at"]
+    column_searchable_list = ["course.title"]
+    form_columns = ["course", "image_url"]
+
+    form_overrides = {"image_url": FileField}
+    form_args = {
+        "image_url": {
+            "widget": OptionalFileInput(),
+            "validators": [Optional()]
+        }
+    }
+
+    column_labels = {
+        "id": "شناسه عکس",
+        "course": "انتخاب دوره آموزشی",
+        "course.title": "دوره مرتبط",
+        "image_url": "آپلود تصویر آلبوم",
+        "created_at": "تاریخ آپلود"
+    }
+
+    column_formatters = {
+        CourseImage.created_at: lambda m, a: to_shamsi(m.created_at),
+        "image_url": lambda m, a: Markup(
+            f'<a href="{m.image_url}" target="_blank">'
+            f'<img src="{m.image_url}" style="max-height: 45px; border-radius: 6px; object-fit: cover; border: 1px solid #ddd;" />'
+            f'</a>'
+        ) if getattr(m, "image_url", None) else "بدون عکس"
+    }
+
+    # ذخیره فیزیکی تصویر روی سرور
+    async def on_model_change(self, data: dict, model: CourseImage, is_created: bool, request: Request) -> None:
+        if "image_url" in data:
+            val = data["image_url"]
+            if isinstance(val, UploadFile) and val.filename:
+                file_path = await save_uploaded_file(val, "courses/images/album")
+                if file_path:
+                    data["image_url"] = file_path
+                else:
+                    data.pop("image_url", None)
+            else:
+                if is_created:
+                    raise ValueError("آپلود تصویر برای آلبوم الزامی است.")
+                data.pop("image_url", None)
+
+    # حذف فیزیکی فایل از روی هارد سرور در صورت حذف رکورد
+    async def on_model_delete(self, model: CourseImage, request: Request) -> None:
+        if model.image_url:
+            old_path = f"app{model.image_url}"
+            if os.path.exists(old_path):
+                os.remove(old_path)
+
+
 class LessonAdmin(ModelView, model=Lesson):
     name = "جلسه"
     name_plural = "۵. ویدیوها و جلسات دوره‌ها"
@@ -381,8 +445,7 @@ class LessonAdmin(ModelView, model=Lesson):
                    "created_at"]
     column_searchable_list = ["title"]
 
-    # اضافه شدن cover_url به فیلدهای فرم آپلود/ویرایش
-    form_columns = ["course", "title", "description", "cover_url", "video_url", "sort_order", "is_free"]
+    form_columns = ["course", "title", "description", "caption", "cover_url", "video_url", "sort_order", "is_free"]
 
     column_formatters = {
         Lesson.created_at: lambda m, a: to_shamsi(m.created_at),
@@ -428,29 +491,27 @@ class LessonAdmin(ModelView, model=Lesson):
     column_labels = {
         "id": "شناسه ویدیو", "course": "دوره آموزشی مرتبط", "title": "عنوان این جلسه",
         "description": "خلاصه توضیحات جلسه",
-        "cover_url": "عکس کاور جلسه",  # لیبل جدید
+        "caption": "متن کپشن زیر ویدیو",  # 🔴 لیبل فیلد جدید برای ادمین پنل
+        "cover_url": "عکس کاور جلسه",
         "video_url": "آپلود فایل ویدیو (MP4)",
         "duration": "مدت زمان (دقیقه)", "sort_order": "شماره قسمت", "is_free": "قسمت معرفی (رایگان)",
         "video_status": "وضعیت پردازش ویدیو", "created_at": "تاریخ ثبت"
     }
 
     async def on_model_change(self, data: dict, model: Any, is_created: bool, request: Request) -> None:
-        # ۱. پردازش و ذخیره عکس کاور (بخش جدید)
+        # ۱. پردازش و ذخیره عکس کاور
         if "cover_url" in data:
             cover_val = data["cover_url"]
-            # بررسی اینکه آیا فایل جدیدی آپلود شده است
             if hasattr(cover_val, "filename") and cover_val.filename:
-                # استفاده از تابع کمکی موجود برای ذخیره عکس
                 file_path = await save_uploaded_file(cover_val, "courses/lessons/covers")
                 if file_path:
                     data["cover_url"] = file_path
                 else:
                     data.pop("cover_url", None)
             else:
-                # اگر فایلی آپلود نشده، کلید را حذف می‌کنیم تا مقدار قبلی در دیتابیس پاک نشود
                 data.pop("cover_url", None)
 
-        # ۲. پردازش و ذخیره ویدیو (کد دست‌نخورده قبلی)
+        # ۲. پردازش و ذخیره ویدیو
         if "video_url" in data:
             val = data["video_url"]
 
@@ -888,23 +949,74 @@ class HighlightCategoryAdmin(ModelView, model=HighlightCategory):
 
 
 class HighlightItemAdmin(ModelView, model=HighlightItem):
-    name = "عکس هایلایت"
-    name_plural = "۱۸. تصاویر هایلایت‌ها"
-    icon = "fa-solid fa-image"
+    name = "آیتم هایلایت"
+    name_plural = "۱۸. تصاویر و ویدیوهای هایلایت‌ها"
+    icon = "fa-solid fa-images"
     list_template = "custom_list.html"
 
-    column_list = ["id", "category_id", "created_at"]
-    column_formatters = {HighlightItem.created_at: lambda m, a: to_shamsi(m.created_at)}
-    column_formatters_detail = {HighlightItem.created_at: lambda m, a: to_shamsi(m.created_at)}
-    form_columns = ["category", "image_url"]
+    create_template = "custom_create.html"
+    edit_template = "custom_edit.html"
 
-    form_overrides = {"image_url": FileField}
-    form_args = {"image_url": {"widget": FileInput()}}
+    column_list = ["id", "category.title", "image_url", "video_url", "created_at"]
+    column_searchable_list = ["category.title"]
+    form_columns = ["category", "image_url", "video_url"]
 
-    column_labels = {"id": "شناسه", "category_id": "شناسه دسته", "category": "انتخاب دسته",
-                     "image_url": "آپلود تصویر جدید استوری", "created_at": "تاریخ"}
+    form_overrides = {
+        "image_url": FileField,
+        "video_url": FileField
+    }
+
+    # 🔴 هر دو فیلد کاملاً اختیاری تنظیم شدند تا فرم با آپلود هرکدام از آن‌ها ثبت بشود
+    form_args = {
+        "image_url": {
+            "widget": OptionalFileInput(),
+            "validators": [Optional()]
+        },
+        "video_url": {
+            "widget": OptionalFileInput(),
+            "validators": [Optional()]
+        }
+    }
+
+    column_labels = {
+        "id": "شناسه",
+        "category_id": "شناسه دسته",
+        "category": "انتخاب دسته هایلایت",
+        "category.title": "دسته‌بندی هایلایت",
+        "image_url": "آپلود تصویر استوری (اختیاری)",
+        "video_url": "آپلود ویدیو استوری (اختیاری)",
+        "created_at": "تاریخ"
+    }
+
+    column_formatters = {
+        HighlightItem.created_at: lambda m, a: to_shamsi(m.created_at),
+        "image_url": lambda m, a: Markup(
+            f'<a href="{m.image_url}" target="_blank">'
+            f'<img src="{m.cover_url if hasattr(m, "cover_url") else m.image_url}" style="max-height: 45px; border-radius: 6px; object-fit: cover; border: 1px solid #ddd;" />'
+            f'</a>'
+        ) if getattr(m, "image_url", None) else "بدون عکس",
+        "video_url": lambda m, a: Markup(
+            f'<video src="{m.video_url}" controls style="max-height: 45px; border-radius: 6px;"></video>'
+        ) if getattr(m, "video_url", None) else "بدون ویدیو"
+    }
+
+    column_formatters_detail = {
+        HighlightItem.created_at: lambda m, a: to_shamsi(m.created_at)
+    }
 
     async def on_model_change(self, data: dict, model: HighlightItem, is_created: bool, request: Request) -> None:
+        # 🔴 کنترل منطقی: در زمان ساخت هایلایت جدید، باید حتماً یا عکس یا فیلم آپلود شده باشد
+        if is_created:
+            img_file = data.get("image_url")
+            vid_file = data.get("video_url")
+
+            has_img = hasattr(img_file, "filename") and img_file.filename
+            has_vid = hasattr(vid_file, "filename") and vid_file.filename
+
+            if not (has_img or has_vid):
+                raise ValueError("خطا: برای ساخت هایلایت، آپلود حداقل یکی از دو فیلد (تصویر) یا (ویدیو) الزامی است!")
+
+        # پردازش آپلود عکس
         if "image_url" in data:
             val = data["image_url"]
             if isinstance(val, UploadFile) and val.filename:
@@ -916,8 +1028,17 @@ class HighlightItemAdmin(ModelView, model=HighlightItem):
             else:
                 data.pop("image_url", None)
 
-    def is_accessible(self, request: Request) -> bool:
-        return True
+        # پردازش آپلود ویدیو
+        if "video_url" in data:
+            val = data["video_url"]
+            if isinstance(val, UploadFile) and val.filename:
+                file_path = await save_uploaded_file(val, "highlights")
+                if file_path:
+                    data["video_url"] = file_path
+                else:
+                    data.pop("video_url", None)
+            else:
+                data.pop("video_url", None)
 
 
 # =========================================================================
@@ -952,6 +1073,66 @@ class CourseReviewAdmin(ModelView, model=CourseReview):
 
     def is_accessible(self, request: Request) -> bool:
         return True
+
+
+class BannerAdmin(ModelView, model=Banner):
+    name = "بنر"
+    name_plural = "۲۰. بنرهای افقی صفحه اصلی"
+    icon = "fa-solid fa-rectangle-ad"
+    list_template = "custom_list.html"
+
+    # اتصال به سیستم کراپ عکس
+    create_template = "custom_create.html"
+    edit_template = "custom_edit.html"
+
+    column_list = ["id", "title", "subtitle", "course.title", "image_url"]
+    column_searchable_list = ["title", "subtitle"]
+    form_columns = ["title", "subtitle", "image_url", "course"]
+
+    form_overrides = {"image_url": FileField}
+    form_args = {
+        "image_url": {
+            "widget": OptionalFileInput(),
+            "validators": [Optional()]
+        }
+    }
+
+    column_labels = {
+        "id": "شناسه",
+        "title": "عنوان بنر (تیتر اصلی)",
+        "subtitle": "زیرعنوان (توضیح کوتاه فرعی)",
+        "image_url": "آپلود تصویر بنر (افقی)",
+        "course": "انتخاب دوره جهت لینک شدن (اختیاری)",
+        "course.title": "دوره مرتبط"
+    }
+
+    column_formatters = {
+        "image_url": lambda m, a: Markup(
+            f'<a href="{m.image_url}" target="_blank">'
+            f'<img src="{m.image_url}" style="max-height: 45px; border-radius: 6px; object-fit: cover; border: 1px solid #ddd;" />'
+            f'</a>'
+        ) if getattr(m, "image_url", None) else "بدون تصویر"
+    }
+
+    async def on_model_change(self, data: dict, model: Banner, is_created: bool, request: Request) -> None:
+        if "image_url" in data:
+            val = data["image_url"]
+            if isinstance(val, UploadFile) and val.filename:
+                file_path = await save_uploaded_file(val, "banners")
+                if file_path:
+                    data["image_url"] = file_path
+                else:
+                    data.pop("image_url", None)
+            else:
+                if is_created:
+                    raise ValueError("آپلود تصویر بنر الزامی است.")
+                data.pop("image_url", None)
+
+    async def on_model_delete(self, model: Banner, request: Request) -> None:
+        if model.image_url:
+            old_path = f"app{model.image_url}"
+            if os.path.exists(old_path):
+                os.remove(old_path)
 
 
 # =========================================================================
@@ -1097,6 +1278,7 @@ def init_admin(app):
     admin.add_view(RoleAdmin)
     admin.add_view(PermissionAdmin)
     admin.add_view(CourseAdmin)
+    admin.add_view(CourseImageAdmin)
     admin.add_view(LessonAdmin)
     admin.add_view(CourseDocumentAdmin)
     admin.add_view(OrderAdmin)
@@ -1113,6 +1295,7 @@ def init_admin(app):
     admin.add_view(HighlightCategoryAdmin)
     admin.add_view(HighlightItemAdmin)
     admin.add_view(CourseReviewAdmin)
+    admin.add_view(BannerAdmin)
     admin.add_base_view(SupportChatDashboard)
 
     return admin

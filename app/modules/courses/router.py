@@ -180,10 +180,11 @@ def create_new_course(
 # --- تغییر ۲: اصلاح روت آپلود ویدیو ---
 @router.post("/lessons", response_model=schemas.LessonResponse, status_code=status.HTTP_201_CREATED)
 def add_video_to_course(
-        background_tasks: BackgroundTasks,  # <--- این پارامتر حیاتی برای تسک‌های پس‌زمینه اضافه شد
+        background_tasks: BackgroundTasks,
         course_id: int = Form(...),
         title: str = Form(...),
         description: Optional[str] = Form(None),
+        caption: Optional[str] = Form(None),  # 🔴 اضافه شدن پارامتر فرم برای کپشن
         duration: int = Form(...),
         sort_order: int = Form(1),
         is_free: bool = Form(False),
@@ -195,26 +196,22 @@ def add_video_to_course(
     if not course:
         raise HTTPException(status_code=404, detail="دوره مورد نظر یافت نشد.")
 
-    # ذخیره در پوشه امن
     lesson_folder_name = f"course_{course_id}_lesson_{int(time.time())}"
     lesson_dir = os.path.join(PRIVATE_VIDEO_DIR, lesson_folder_name)
     os.makedirs(lesson_dir, exist_ok=True)
 
-    # ذخیره موقت فایل MP4 که ادمین آپلود کرده است
     temp_video_path = os.path.join(lesson_dir, "raw_video.mp4")
     with open(temp_video_path, "wb") as buffer:
         shutil.copyfileobj(video_file.file, buffer)
 
-    # <--- تغییر اساسی: ارجاع تبدیل ویدیو به بک‌گراند تسک --->
-    # ریکوئست منتظر پایان این تابع نمی‌ماند و فوراً ریسپانس ۲۰۰ را برمی‌گرداند
     background_tasks.add_task(process_video_to_hls, temp_video_path, lesson_dir)
 
-    # ذخیره نام پوشه در دیتابیس
     video_folder_reference = lesson_folder_name
 
+    # 🔴 تزریق فیلد caption به اطلاعات ساخت جلسه
     lesson_data = schemas.LessonCreate(
         course_id=course_id, title=title, description=description,
-        duration=duration, sort_order=sort_order, is_free=is_free
+        caption=caption, duration=duration, sort_order=sort_order, is_free=is_free
     )
     return services.create_lesson(db=db, lesson=lesson_data, video_url=video_folder_reference)
 
@@ -291,25 +288,33 @@ async def submit_course_review(
         db: Session = Depends(get_db),
         current_user: User = Depends(get_current_active_user)
 ):
-    # الف) بررسی اینکه آیا کاربر واقعاً این دوره را خریده است؟
-    has_purchased = db.query(Enrollment).filter(
-        Enrollment.user_id == current_user.id,
-        Enrollment.course_id == course_id
-    ).first()
-
-    if not has_purchased:
+    # الف) بررسی وجود داشتن خود دوره
+    course = db.query(Course).filter(Course.id == course_id).first()
+    if not course:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="شما دانشجوی این دوره نیستید و اجازه ثبت نظر ندارید."
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="دوره آموزشی یافت نشد."
         )
 
-    # ب) هندل کردن آپلود عکس اختیاری نظر
+    # ب) اگر دوره پولی بود (قیمت بزرگتر از صفر)، بررسی دسترسی و خرید الزامی است
+    if course.price > 0:
+        has_purchased = db.query(Enrollment).filter(
+            Enrollment.user_id == current_user.id,
+            Enrollment.course_id == course_id
+        ).first()
+
+        if not has_purchased:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="شما دانشجوی این دوره نیستید و اجازه ثبت نظر برای دوره‌های پولی را ندارید."
+            )
+
+    # ج) هندل کردن آپلود عکس اختیاری نظر (کد قبلی شما کاملاً دست‌نخورده)
     uploaded_image_url = None
     if image and image.filename:
-        # ذخیره در پوشه تفکیک شده نظرات
         uploaded_image_url = await save_uploaded_file(image, "courses/reviews")
 
-    # ج) ثبت در دیتابیس (به صورت پیش‌فرض تایید نشده است تا ادمین تایید کند)
+    # د) ثبت در دیتابیس (به صورت پیش‌فرض تایید نشده است تا ادمین تایید کند)
     new_review = CourseReview(
         user_id=current_user.id,
         course_id=course_id,

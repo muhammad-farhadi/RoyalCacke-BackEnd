@@ -25,7 +25,8 @@ class HighlightItem(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     category_id = Column(Integer, ForeignKey("highlight_categories.id", ondelete="CASCADE"), nullable=False)
-    image_url = Column(String, nullable=False)  # آدرس عکسی که داخل هایلایت نمایش داده می‌شود
+    image_url = Column(String, nullable=True)
+    video_url = Column(String, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))  # تاریخ ثبت همین عکس
 
     # رابطه برگشتی به دسته

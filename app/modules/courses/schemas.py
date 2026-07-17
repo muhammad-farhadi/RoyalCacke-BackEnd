@@ -8,6 +8,7 @@ from datetime import datetime
 class LessonBase(BaseModel):
     title: str
     description: Optional[str] = None
+    caption: Optional[str] = None
     duration: int
     sort_order: int = 1
     is_free: bool = False
@@ -65,12 +66,23 @@ class CourseDocumentResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
+class CourseImageResponse(BaseModel):
+    id: int
+    course_id: int
+    image_url: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 # خروجی کامل دوره به همراه لیست ویدیوها
 class CourseResponse(CourseBase):
     id: int
     image_url: Optional[str] = None
     lessons: List[LessonResponse] = []
     documents: List[CourseDocumentResponse] = []
+    images: List[CourseImageResponse] = []
     created_at: datetime
     updated_at: datetime
 

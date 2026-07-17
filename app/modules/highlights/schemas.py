@@ -1,12 +1,13 @@
 # app/modules/highlights/schemas.py
 from pydantic import BaseModel
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 
 class HighlightItemResponse(BaseModel):
     id: int
-    image_url: str
+    image_url: Optional[str] = None
+    video_url: Optional[str] = None
     created_at: datetime
 
     class Config:

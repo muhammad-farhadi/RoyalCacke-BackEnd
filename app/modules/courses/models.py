@@ -5,6 +5,18 @@ from sqlalchemy.orm import relationship
 from app.core.database import Base
 
 
+class CourseImage(Base):
+    __tablename__ = "course_images"
+
+    id = Column(Integer, primary_key=True, index=True)
+    course_id = Column(Integer, ForeignKey("courses.id", ondelete="CASCADE"), nullable=False)
+    image_url = Column(String, nullable=False)  # آدرس عکس فرعی آلبوم
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # رابطه با جدول دوره
+    course = relationship("Course", back_populates="images")
+
+
 class Course(Base):
     __tablename__ = "courses"
 
@@ -27,6 +39,7 @@ class Course(Base):
     # رابطه با جلسات دوره (در صورت حذف دوره، تمام ویدیوها هم حذف می‌شوند)
     lessons = relationship("Lesson", back_populates="course", cascade="all, delete-orphan")
     documents = relationship("CourseDocument", back_populates="course", cascade="all, delete-orphan")
+    images = relationship("CourseImage", back_populates="course", cascade="all, delete-orphan")
 
     def __str__(self):
         return self.title
@@ -56,18 +69,15 @@ class Lesson(Base):
     title = Column(String, nullable=False)
     description = Column(Text, nullable=True)
 
-    # مسیر فایل استریم HLS (مانند: /static/videos/course_1/lesson_3/playlist.m3u8)
     video_url = Column(String, nullable=False)
-    duration = Column(Integer, default=0)  # زمان این جلسه به دقیقه
-    sort_order = Column(Integer, default=1)  # ترتیب نمایش ویدیوها (قسمت ۱، ۲ و...)
-    is_free = Column(Boolean, default=False)  # آیا برای پیش‌نمایش رایگان است؟
+    duration = Column(Integer, default=0)
+    sort_order = Column(Integer, default=1)
+    is_free = Column(Boolean, default=False)
 
-    # 🟢 فیلد جدید برای تشخیص وضعیت تبدیل ویدیو توسط FFmpeg
-    # مقادیر استاندارد: pending (در انتظار) | processing (در حال تبدیل) | completed (موفق) | failed (خطا)
     video_status = Column(String, default="pending", nullable=False)
 
     cover_url = Column(String, nullable=True)
-
+    caption = Column(Text, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # رابطه معکوس با دوره

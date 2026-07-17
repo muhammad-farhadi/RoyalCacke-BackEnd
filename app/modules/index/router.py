@@ -1,5 +1,6 @@
 # app/modules/index/router.py
 import os
+from typing import List
 
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, status
 from fastapi.responses import HTMLResponse
@@ -15,6 +16,8 @@ from . import models, schemas
 
 import jdatetime
 from datetime import datetime
+
+from .models import Banner
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -156,3 +159,8 @@ def download_android_apk():
         media_type="application/vnd.android.package-archive",
         filename=download_filename
     )
+
+
+@router.get("/api/v1/banners", response_model=List[schemas.BannerResponse])
+def get_all_banners(db: Session = Depends(get_db)):
+    return db.query(Banner).order_by(Banner.id.asc()).all()

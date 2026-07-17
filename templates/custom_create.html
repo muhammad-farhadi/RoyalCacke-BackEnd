@@ -5,7 +5,7 @@
 <!-- CSS ابزار کراپ عکس -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
 <style>
-    /* استایل اختصاصی پاپ‌آپ خالص بدون وابستگی به بوت‌استرپ */
+    /* استایل اختصاصی پاپ‌آ‌پ مستقل بدون وابستگی به بوت‌استرپ و تبلر */
     #customCropOverlay {
         display: none;
         position: fixed;
@@ -65,10 +65,10 @@
 {% block content %}
 {{ super() }}
 
-<!-- سیستم پروگرس بار شما کاملاً محفوظ و دست‌نخورده لود می‌شود -->
+<!-- سیستم پروگرس بار شما بدون تغییر لود می‌شود -->
 {% include "upload_progress.html" %}
 
-<!-- 🟢 پاپ‌آپ اختصاصی و مستقل از سیستم تبلر/بوت‌استرپ -->
+<!-- پاپ‌آ‌پ اختصاصی ابزار کراپ -->
 <div id="customCropOverlay">
     <div class="custom-crop-box">
         <div class="custom-crop-header">
@@ -91,12 +91,13 @@
     </div>
 </div>
 
-<!-- اسکریپت ابزار کراپ -->
+<!-- اسکریپت اصلی ابزار کراپ و منطق هوشمند ابعاد -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         let cropper = null;
         let currentInput = null;
+        let activeSpec = null; // ذخیره موقت ساختار کراپ فعال
 
         const overlay = document.getElementById('customCropOverlay');
         const previewImg = document.getElementById('cropper-preview-img');
@@ -104,12 +105,13 @@
         const cancelBtn = document.getElementById('custom-cancel-btn');
         const closeX = document.getElementById('custom-close-x');
 
+        // جدول ابعاد و نسبت‌های استاندارد مورد نیاز فرانت‌اَند
         const cropSpecs = {
-            "image_url": {aspect: 13 / 15, width: 520, height: 600}, // عکس اصلی دوره‌ها
-            "cover_url": {aspect: 19 / 13, width: 380, height: 260}  // کاور جلسات و کاور PDFها
+            "image_url": {aspect: 13 / 15, width: 520, height: 600},    // عکس اصلی دوره‌ها (عمودی)
+            "banner_image": {aspect: 16 / 9, width: 960, height: 540}, // بنرهای افقی صفحه اصلی
+            "cover_url": {aspect: 19 / 13, width: 380, height: 260}    // کاور جلسات و کاور PDFها
         };
 
-        // تابع کمکی بستن پاپ‌آپ و پاکسازی کراپ
         function closeCropModal() {
             overlay.style.display = 'none';
             if (cropper) {
@@ -121,26 +123,30 @@
         cancelBtn.addEventListener('click', closeCropModal);
         closeX.addEventListener('click', closeCropModal);
 
-        // مانیتور کردن اینپوت‌های فایل
         document.querySelectorAll('input[type="file"]').forEach(input => {
             input.addEventListener('change', function (e) {
-                const spec = cropSpecs[input.name];
-                if (!spec) return;
+                let specName = input.name;
+
+                // هوک هوشمند تداخل نام: اگر فیلد image_url در فرمی باشد که فیلد ثبت زیرعنوان (subtitle) دارد، یعنی فرم بنر است
+                if (specName === "image_url" && document.querySelector('input[name="subtitle"]')) {
+                    specName = "banner_image";
+                }
+
+                const spec = cropSpecs[specName];
+                if (!spec) return; // اگر فیلد غیر تصویری (مثل ویدیو) بود، عملیاتی انجام نشود
 
                 const files = e.target.files;
                 if (files && files.length > 0) {
                     currentInput = input;
+                    activeSpec = spec; // اختصاص دادن خط‌کش ابعادی فعال
                     const file = files[0];
                     if (!file.type.startsWith('image/')) return;
 
                     const reader = new FileReader();
                     reader.onload = function (event) {
                         previewImg.src = event.target.result;
-
-                        // 🟢 باز کردن پاپ‌آپ با استایل مستقیم (بدون دخالت لایبرری تبلر)
                         overlay.style.display = 'flex';
 
-                        // راه‌اندازی فوری کراپ به محض نمایان شدن تصویر
                         cropper = new Cropper(previewImg, {
                             aspectRatio: spec.aspect,
                             viewMode: 1,
@@ -155,14 +161,12 @@
             });
         });
 
-        // ذخیره و کراپ نهایی عکس
         saveBtn.addEventListener('click', function () {
-            if (!cropper || !currentInput) return;
-            const spec = cropSpecs[currentInput.name];
+            if (!cropper || !currentInput || !activeSpec) return;
 
             const canvas = cropper.getCroppedCanvas({
-                width: spec.width,
-                height: spec.height,
+                width: activeSpec.width,
+                height: activeSpec.height,
                 imageSmoothingEnabled: true,
                 imageSmoothingQuality: 'high'
             });
@@ -175,7 +179,6 @@
                 dataTransfer.items.add(croppedFile);
                 currentInput.files = dataTransfer.files;
 
-                // بستن فرم
                 closeCropModal();
             }, 'image/jpeg', 0.9);
         });
