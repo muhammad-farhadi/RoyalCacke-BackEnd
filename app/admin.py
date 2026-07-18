@@ -55,15 +55,26 @@ os.makedirs(PRIVATE_VIDEO_DIR, exist_ok=True)
 
 video_executor = ThreadPoolExecutor(max_workers=1)
 
-
 # =========================================================================
 # تابع کمکی برای تبدیل تاریخ میلادی دیتابیس به شمسی برای نمایش در پنل
 # =========================================================================
+from datetime import datetime, timedelta, timezone
+
+
 def to_shamsi(dt_obj):
     if not dt_obj or not isinstance(dt_obj, datetime):
         return "-"
-    # تبدیل تاریخ به شمسی و فرمت‌بندی به شکل (سال/ماه/روز ساعت:دقیقه)
-    j_date = jdatetime.datetime.fromgregorian(datetime=dt_obj)
+
+    # ۱. اگر تاریخ بدون ریجن زمانی است (naive)، فرض می‌کنیم UTC دیتابیس است
+    if dt_obj.tzinfo is None:
+        dt_obj = dt_obj.replace(tzinfo=timezone.utc)
+
+    # ۲. تبدیل مستقیم به وقت تهران (از ۲۰۲۳ ساعت رسمی تغییر نمی‌کند و همیشه UTC+3:30 است)
+    tehran_offset = timezone(timedelta(hours=3, minutes=30))
+    dt_tehran = dt_obj.astimezone(tehran_offset)
+
+    # ۳. تبدیل به تاریخ شمسی
+    j_date = jdatetime.datetime.fromgregorian(datetime=dt_tehran)
     return j_date.strftime("%Y/%m/%d - %H:%M")
 
 
@@ -619,12 +630,16 @@ class CourseDocumentAdmin(ModelView, model=CourseDocument):
 
     column_formatters = {
         CourseDocument.created_at: lambda m, a: to_shamsi(m.created_at),
-        # 🔴 رندر کردن عکس کاور فایل در جدول ادمین پنل
         "cover_url": lambda m, a: Markup(
             f'<a href="{m.cover_url}" target="_blank">'
             f'<img src="{m.cover_url}" style="max-height: 45px; border-radius: 6px; object-fit: cover; border: 1px solid #ddd;" />'
             f'</a>'
         ) if getattr(m, "cover_url", None) else "بدون کاور"
+    }
+
+    # 🔴 اضافه شد: برای دتایل فایل‌ها
+    column_formatters_detail = {
+        CourseDocument.created_at: lambda m, a: to_shamsi(m.created_at)
     }
 
     async def on_model_change(self, data: dict, model: CourseDocument, is_created: bool, request: Request) -> None:
@@ -751,6 +766,15 @@ class DiscountAdmin(ModelView, model=Discount):
     icon = "fa-solid fa-percent"
     column_list = ["id", "code", "percent", "usage_limit", "used_count", "is_active", "valid_until"]
     column_searchable_list = ["code"]
+
+    # 🔴 اصلاح شد: تبدیل تاریخ انقضا به شمسی در لیست و دتایل
+    column_formatters = {
+        "valid_until": lambda m, a: to_shamsi(m.valid_until)
+    }
+    column_formatters_detail = {
+        "valid_until": lambda m, a: to_shamsi(m.valid_until)
+    }
+
     column_labels = {
         "id": "شناسه", "code": "کد تخفیف", "percent": "درصد (٪)", "usage_limit": "سقف استفاده",
         "used_count": "تعداد استفاده شده", "valid_until": "تاریخ انقضا", "is_active": "وضعیت اعتبار"
@@ -828,7 +852,7 @@ class ArticleAdmin(ModelView, model=Article):
     list_template = "custom_list.html"
     icon = "fa-solid fa-newspaper"
     column_formatters = {Article.created_at: lambda m, a: to_shamsi(m.created_at)}
-    column_formatters_detail = {Article.created_at: lambda m, a: to_shamsi(m.created_at)}
+    column_formatters_detail = {Article.created_at: lambda m, a: to_shamsi(m.created_at)}  # 🔴 اضافه شد
     column_list = ["id", "title", "slug", "author_id", "created_at"]
     column_searchable_list = ["title", "slug"]
     form_columns = ["title", "slug", "image_url", "content", "meta_description", "tags", "author_id"]
@@ -861,7 +885,7 @@ class GalleryItemAdmin(ModelView, model=GalleryItem):
     list_template = "custom_list.html"
     icon = "fa-solid fa-images"
     column_formatters = {GalleryItem.created_at: lambda m, a: to_shamsi(m.created_at)}
-    column_formatters_detail = {GalleryItem.created_at: lambda m, a: to_shamsi(m.created_at)}
+    column_formatters_detail = {GalleryItem.created_at: lambda m, a: to_shamsi(m.created_at)}  # 🔴 اضافه شد
     column_list = ["id", "title", "category", "image_url", "created_at"]
     column_searchable_list = ["title", "category"]
     form_columns = ["title", "category", "image_url", "alt_text"]
@@ -894,7 +918,7 @@ class ContactMessageAdmin(ModelView, model=ContactMessage):
     icon = "fa-solid fa-envelope-open-text"
     column_list = ["id", "name", "phone_number", "message", "created_at"]
     column_formatters = {ContactMessage.created_at: lambda m, a: to_shamsi(m.created_at)}
-    column_formatters_detail = {ContactMessage.created_at: lambda m, a: to_shamsi(m.created_at)}
+    column_formatters_detail = {ContactMessage.created_at: lambda m, a: to_shamsi(m.created_at)}  # 🔴 اضافه شد
     column_searchable_list = ["name", "phone_number"]
     column_labels = {"id": "شناسه", "name": "فرستنده", "phone_number": "شماره تماس", "message": "متن پیام",
                      "created_at": "تاریخ ارسال"}
@@ -907,7 +931,7 @@ class SupportMessageAdmin(ModelView, model=SupportMessage):
     icon = "fa-solid fa-comments"
     column_list = ["id", "room_user_id", "sender_id", "content", "is_read", "created_at"]
     column_formatters = {SupportMessage.created_at: lambda m, a: to_shamsi(m.created_at)}
-    column_formatters_detail = {SupportMessage.created_at: lambda m, a: to_shamsi(m.created_at)}
+    column_formatters_detail = {SupportMessage.created_at: lambda m, a: to_shamsi(m.created_at)}  # 🔴 اضافه شد
     column_searchable_list = ["content"]
     column_labels = {"id": "شناسه", "room_user_id": "اتاق چت", "sender_id": "فرستنده", "content": "متن",
                      "is_read": "خوانده شده؟", "created_at": "زمان"}
@@ -923,7 +947,7 @@ class HighlightCategoryAdmin(ModelView, model=HighlightCategory):
     list_template = "custom_list.html"
     column_list = ["id", "title", "created_at"]
     column_formatters = {HighlightCategory.created_at: lambda m, a: to_shamsi(m.created_at)}
-    column_formatters_detail = {HighlightCategory.created_at: lambda m, a: to_shamsi(m.created_at)}
+    column_formatters_detail = {HighlightCategory.created_at: lambda m, a: to_shamsi(m.created_at)}  # 🔴 اضافه شد
     form_columns = ["title", "cover_url"]
 
     form_overrides = {"cover_url": FileField}
@@ -1000,9 +1024,7 @@ class HighlightItemAdmin(ModelView, model=HighlightItem):
         ) if getattr(m, "video_url", None) else "بدون ویدیو"
     }
 
-    column_formatters_detail = {
-        HighlightItem.created_at: lambda m, a: to_shamsi(m.created_at)
-    }
+    column_formatters_detail = {HighlightItem.created_at: lambda m, a: to_shamsi(m.created_at)}  # 🔴 اضافه شد
 
     async def on_model_change(self, data: dict, model: HighlightItem, is_created: bool, request: Request) -> None:
         # 🔴 کنترل منطقی: در زمان ساخت هایلایت جدید، باید حتماً یا عکس یا فیلم آپلود شده باشد
