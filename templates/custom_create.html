@@ -17,6 +17,9 @@
         z-index: 999999;
         justify-content: center;
         align-items: center;
+        pointer-events: none;
+        user-select: none;
+        -webkit-user-select: none;
     }
 
     .custom-crop-box {
@@ -59,13 +62,38 @@
         display: block;
         margin: 0 auto;
     }
+
+    /* 🔒 قفل اول ضد باگ موبایل: غیرقابل انتخاب کردن لیبل‌ها و المان‌های ساختاری فرم */
+    .form-label,
+    .form-hint,
+    .input-group-text,
+    label,
+    .btn:not(.btn-primary):not(#crop-save-btn),
+    .nav-link,
+    .card-title {
+        -webkit-user-select: none !important;
+        -moz-user-select: none !important;
+        -ms-user-select: none !important;
+        user-select: none !important;
+    }
+
+    /* باز نگه داشتن دسترسی انتخاب متن و فوکوس برای فیلدهای ورودی واقعی */
+    input[type="text"],
+    input[type="number"],
+    textarea,
+    .form-control {
+        -webkit-user-select: text !important;
+        -moz-user-select: text !important;
+        -ms-user-select: text !important;
+        user-select: text !important;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 {{ super() }}
 
-<!-- سیستم پروگرس بار شما بدون تغییر لود می‌شود -->
+<!-- سیستم پروگرس بار بدون تغییر لود می‌شود -->
 {% include "upload_progress.html" %}
 
 <!-- پاپ‌آ‌پ اختصاصی ابزار کراپ -->
@@ -97,7 +125,7 @@
     document.addEventListener("DOMContentLoaded", function () {
         let cropper = null;
         let currentInput = null;
-        let activeSpec = null; // ذخیره موقت ساختار کراپ فعال
+        let activeSpec = null;
 
         const overlay = document.getElementById('customCropOverlay');
         const previewImg = document.getElementById('cropper-preview-img');
@@ -105,15 +133,20 @@
         const cancelBtn = document.getElementById('custom-cancel-btn');
         const closeX = document.getElementById('custom-close-x');
 
-        // جدول ابعاد و نسبت‌های استاندارد مورد نیاز فرانت‌اَند
         const cropSpecs = {
-            "image_url": {aspect: 13 / 15, width: 520, height: 600},    // عکس اصلی دوره‌ها (عمودی)
-            "banner_image": {aspect: 16 / 9, width: 960, height: 540}, // بنرهای افقی صفحه اصلی
-            "cover_url": {aspect: 19 / 13, width: 380, height: 260}    // کاور جلسات و کاور PDFها
+            "image_url": {aspect: 13 / 15, width: 520, height: 600},
+            "banner_image": {aspect: 16 / 9, width: 960, height: 540},
+            "cover_url": {aspect: 19 / 13, width: 380, height: 260}
         };
 
         function closeCropModal() {
             overlay.style.display = 'none';
+
+            // قفل کردن دسترسی مرورگر موبایل به این پاپ‌آپ در زمان بسته بودن
+            overlay.style.pointerEvents = 'none';
+            overlay.style.userSelect = 'none';
+            overlay.style.webkitUserSelect = 'none';
+
             if (cropper) {
                 cropper.destroy();
                 cropper = null;
@@ -127,25 +160,29 @@
             input.addEventListener('change', function (e) {
                 let specName = input.name;
 
-                // هوک هوشمند تداخل نام: اگر فیلد image_url در فرمی باشد که فیلد ثبت زیرعنوان (subtitle) دارد، یعنی فرم بنر است
                 if (specName === "image_url" && document.querySelector('input[name="subtitle"]')) {
                     specName = "banner_image";
                 }
 
                 const spec = cropSpecs[specName];
-                if (!spec) return; // اگر فیلد غیر تصویری (مثل ویدیو) بود، عملیاتی انجام نشود
+                if (!spec) return;
 
                 const files = e.target.files;
                 if (files && files.length > 0) {
                     currentInput = input;
-                    activeSpec = spec; // اختصاص دادن خط‌کش ابعادی فعال
+                    activeSpec = spec;
                     const file = files[0];
                     if (!file.type.startsWith('image/')) return;
 
                     const reader = new FileReader();
                     reader.onload = function (event) {
                         previewImg.src = event.target.result;
+
+                        // باز کردن پاپ‌آپ و آزاد کردن موقت دسترسی تاچ
                         overlay.style.display = 'flex';
+                        overlay.style.pointerEvents = 'auto';
+                        overlay.style.userSelect = 'auto';
+                        overlay.style.webkitUserSelect = 'auto';
 
                         cropper = new Cropper(previewImg, {
                             aspectRatio: spec.aspect,
@@ -181,6 +218,28 @@
 
                 closeCropModal();
             }, 'image/jpeg', 0.9);
+        });
+
+        // 🔒 قفل دوم ضد باگ موبایل: شنود رویداد پیست و اجبار به تزریق متن کاملاً خام
+        document.querySelectorAll('textarea, input[type="text"]').forEach(element => {
+            element.addEventListener('paste', function (e) {
+                const plainText = (e.clipboardData || window.clipboardData).getData('text/plain');
+
+                if (plainText) {
+                    e.preventDefault();
+
+                    const startPos = this.selectionStart;
+                    const endPos = this.selectionEnd;
+                    const currentVal = this.value;
+
+                    this.value = currentVal.substring(0, startPos) + plainText + currentVal.substring(endPos);
+
+                    this.selectionStart = this.selectionEnd = startPos + plainText.length;
+
+                    this.dispatchEvent(new Event('input', {bubbles: true}));
+                    this.dispatchEvent(new Event('change', {bubbles: true}));
+                }
+            });
         });
     });
 </script>
