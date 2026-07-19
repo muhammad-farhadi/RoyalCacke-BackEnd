@@ -343,22 +343,57 @@ class CourseAdmin(ModelView, model=Course):
     create_template = "custom_create.html"
     edit_template = "custom_edit.html"
 
-    column_list = ["id", "title", "price", "category", "session_count", "total_hours", "is_published"]
+    column_list = ["id", "title", "price", "discount_price", "category", "session_count", "total_hours", "is_published"]
     column_searchable_list = ["title", "category"]
-    form_columns = ["title", "description", "price", "session_count", "total_hours", "category", "level", "image_url",
-                    "badge", "is_published"]
+
+    form_columns = ["title", "description", "price", "discount_price", "discount_start", "discount_end",
+                    "session_count", "total_hours", "category", "level", "image_url", "badge", "is_published"]
 
     form_overrides = {"image_url": FileField}
     form_args = {"image_url": {"widget": FileInput()}}
 
     column_labels = {
         "id": "شناسه دوره", "title": "عنوان دوره آموزشی", "description": "توضیحات و سرفصل‌ها",
-        "price": "قیمت دوره (تومان)", "category": "دسته‌بندی اصلی", "session_count": "تعداد کل جلسات",
+        "price": "قیمت اصلی (تومان)",
+        "discount_price": "قیمت با تخفیف (تومان)",
+        "discount_start": "تاریخ و ساعت شروع تخفیف",
+        "discount_end": "تاریخ و ساعت پایان تخفیف",
+        "category": "دسته‌بندی اصلی", "session_count": "تعداد کل جلسات",
         "total_hours": "مجموع زمان دوره", "level": "سطح برگزاری", "image_url": "آپلود پوستر جدید دوره",
         "badge": "برچسب نمایشی", "is_published": "وضعیت انتشار"
     }
 
+    column_formatters = {
+        "discount_start": lambda m, a: to_shamsi(m.discount_start) if getattr(m, "discount_start",
+                                                                              None) else "تنظیم نشده",
+        "discount_end": lambda m, a: to_shamsi(m.discount_end) if getattr(m, "discount_end", None) else "تنظیم نشده"
+    }
+
+    column_formatters_detail = {
+        "discount_start": lambda m, a: to_shamsi(m.discount_start) if getattr(m, "discount_start",
+                                                                              None) else "تنظیم نشده",
+        "discount_end": lambda m, a: to_shamsi(m.discount_end) if getattr(m, "discount_end", None) else "تنظیم نشده"
+    }
+
     async def on_model_change(self, data: dict, model: Course, is_created: bool, request: Request) -> None:
+        # 🔴 بخش جدید: تبدیل هوشمند ساعت تهران ادمین به UTC قبل از ثبت در دیتابیس
+        tehran_offset = timezone(timedelta(hours=3, minutes=30))
+
+        if "discount_start" in data and isinstance(data["discount_start"], datetime):
+            dt_start = data["discount_start"]
+            if dt_start.tzinfo is None:
+                # به مرورگر می‌گوییم این زمان تهران است
+                dt_start = dt_start.replace(tzinfo=tehran_offset)
+            # تبدیل به UTC و حذف اطلاعات ریجن جهت ذخیره تمیز در دیتابیس
+            data["discount_start"] = dt_start.astimezone(timezone.utc).replace(tzinfo=None)
+
+        if "discount_end" in data and isinstance(data["discount_end"], datetime):
+            dt_end = data["discount_end"]
+            if dt_end.tzinfo is None:
+                dt_end = dt_end.replace(tzinfo=tehran_offset)
+            data["discount_end"] = dt_end.astimezone(timezone.utc).replace(tzinfo=None)
+
+        # پردازش آپلود عکس (کد قبلی شما کاملاً محفوظ است)
         if "image_url" in data:
             val = data["image_url"]
             if isinstance(val, UploadFile) and val.filename:
@@ -370,10 +405,8 @@ class CourseAdmin(ModelView, model=Course):
             else:
                 data.pop("image_url", None)
 
-    # 🟢 هوک جدید: حذف فیزیکی تمام ویدیوهای دوره در صورت حذف خود دوره
     async def on_model_delete(self, model: Any, request: Request) -> None:
         import shutil
-        # تک‌تک جلسات این دوره را بررسی می‌کند و پوشه ویدیوهایشان را پاک می‌کند
         for lesson in model.lessons:
             if lesson.video_url:
                 lesson_dir = os.path.join(PRIVATE_VIDEO_DIR, lesson.video_url)

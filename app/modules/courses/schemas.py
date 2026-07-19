@@ -33,6 +33,9 @@ class CourseBase(BaseModel):
     title: str
     description: str
     price: int
+    discount_price: Optional[int] = None  # 🔴 اضافه شد
+    discount_start: Optional[datetime] = None  # 🔴 اضافه شد
+    discount_end: Optional[datetime] = None  # 🔴 اضافه شد
     session_count: int
     total_hours: int
     category: str
@@ -49,6 +52,9 @@ class CourseUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     price: Optional[int] = None
+    discount_price: Optional[int] = None  # 🔴 اضافه شد
+    discount_start: Optional[datetime] = None  # 🔴 اضافه شد
+    discount_end: Optional[datetime] = None  # 🔴 اضافه شد
     session_count: Optional[int] = None
     total_hours: Optional[int] = None
     category: Optional[str] = None
@@ -83,6 +89,11 @@ class CourseResponse(CourseBase):
     lessons: List[LessonResponse] = []
     documents: List[CourseDocumentResponse] = []
     images: List[CourseImageResponse] = []
+
+    # 🔴 این دو فیلد داینامیک مستقیماً از پراپرتی‌های مدل دیتابیس خوانده شده و به اپلیکیشن فرستاده می‌شوند
+    final_price: int
+    is_discount_active: bool
+
     created_at: datetime
     updated_at: datetime
 

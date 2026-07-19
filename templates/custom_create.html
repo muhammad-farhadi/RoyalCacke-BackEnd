@@ -4,8 +4,10 @@
 {{ super() }}
 <!-- CSS ابزار کراپ عکس -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+<!-- 📅 CSS رسمی و معتبر تقویم جلالی -->
+<link rel="stylesheet" href="https://unpkg.com/@majidh1/jalalidatepicker/dist/jalalidatepicker.min.css">
+
 <style>
-    /* استایل اختصاصی پاپ‌آ‌پ مستقل بدون وابستگی به بوت‌استرپ و تبلر */
     #customCropOverlay {
         display: none;
         position: fixed;
@@ -63,7 +65,7 @@
         margin: 0 auto;
     }
 
-    /* 🔒 قفل اول ضد باگ موبایل: غیرقابل انتخاب کردن لیبل‌ها و المان‌های ساختاری فرم */
+    /* 🔒 قفل ضد باگ کپی-پیست موبایل */
     .form-label,
     .form-hint,
     .input-group-text,
@@ -77,7 +79,6 @@
         user-select: none !important;
     }
 
-    /* باز نگه داشتن دسترسی انتخاب متن و فوکوس برای فیلدهای ورودی واقعی */
     input[type="text"],
     input[type="number"],
     textarea,
@@ -87,16 +88,21 @@
         -ms-user-select: text !important;
         user-select: text !important;
     }
+
+    /* 📅 تضمین قرارگیری تقویم روی بالاترین لایه قالب ادمین */
+    jdp-container {
+        font-family: inherit !important;
+        direction: rtl !important;
+        z-index: 999999999 !important;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 {{ super() }}
 
-<!-- سیستم پروگرس بار بدون تغییر لود می‌شود -->
 {% include "upload_progress.html" %}
 
-<!-- پاپ‌آ‌پ اختصاصی ابزار کراپ -->
 <div id="customCropOverlay">
     <div class="custom-crop-box">
         <div class="custom-crop-header">
@@ -119,8 +125,11 @@
     </div>
 </div>
 
-<!-- اسکریپت اصلی ابزار کراپ و منطق هوشمند ابعاد -->
+<!-- 📅 اسکریپت‌های ریاضی و پکیج رسمی تقویم جلالی -->
+<script src="https://cdn.jsdelivr.net/npm/jalaali-js/dist/jalaali.js"></script>
+<script src="https://unpkg.com/@majidh1/jalalidatepicker/dist/jalalidatepicker.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         let cropper = null;
@@ -139,14 +148,123 @@
             "cover_url": {aspect: 19 / 13, width: 380, height: 260}
         };
 
+        function gregToShamsiStr(gStr) {
+            if (!gStr) return '';
+            const cleanStr = gStr.replace('T', ' ');
+            const parts = cleanStr.split(' ');
+            const dateParts = parts[0].split('-');
+            const timePart = parts[1] ? parts[1].substring(0, 5) : '00:00';
+            const gy = parseInt(dateParts[0], 10);
+            const gm = parseInt(dateParts[1], 10);
+            const gd = parseInt(dateParts[2], 10);
+            if (isNaN(gy) || isNaN(gm) || isNaN(gd)) return '';
+            const j = jalaali.toJalaali(gy, gm, gd);
+            return `${j.jy}/${String(j.jm).padStart(2, '0')}/${String(j.jd).padStart(2, '0')} ${timePart}`;
+        }
+
+        function shamsiToGregStr(sStr) {
+            if (!sStr || !sStr.includes('/')) return '';
+            const parts = sStr.trim().split(' ');
+            const dateParts = parts[0].split('/');
+            const timePart = parts[1] || '00:00';
+            const jy = parseInt(dateParts[0], 10);
+            const jm = parseInt(dateParts[1], 10);
+            const jd = parseInt(dateParts[2], 10);
+            if (isNaN(jy) || isNaN(jm) || isNaN(jd)) return '';
+            const g = jalaali.toGregorian(jy, jm, jd);
+            // 🔥 اصلاح بسیار مهم: استفاده از فاصله به جای T برای رفع خطای 400 در پایتون
+            return `${g.gy}-${String(g.gm).padStart(2, '0')}-${String(g.gd).padStart(2, '0')} ${timePart}:00`;
+        }
+
+        // 📅 مقداردهی اینپوت‌های ایزوله و شلیک مستقیم کلیک تقویم
+        function initIsolatedJalaliFields() {
+            const targetNames = ['discount_start', 'discount_end', 'valid_until'];
+
+            targetNames.forEach(name => {
+                const originalField = document.querySelector(`input[name="${name}"]`);
+                if (!originalField || originalField.hasAttribute('data-shadow-bound')) return;
+
+                if (originalField._flatpickr) {
+                    originalField._flatpickr.destroy();
+                }
+
+                // اگر از قبل مقدار با کاراکتر T آمده، آن را در لود اولیه اصلاح کن
+                if (originalField.value && originalField.value.includes('T')) {
+                    originalField.value = originalField.value.replace('T', ' ');
+                }
+
+                originalField.style.setProperty('display', 'none', 'important');
+                originalField.setAttribute('data-shadow-bound', 'true');
+
+                const shadowInput = document.createElement('input');
+                shadowInput.type = 'text';
+                shadowInput.className = 'form-control';
+                shadowInput.placeholder = 'انتخاب تاریخ و ساعت شمسی...';
+                shadowInput.setAttribute('data-jdp', '');
+                shadowInput.setAttribute('autocomplete', 'off');
+                shadowInput.style.cursor = 'pointer';
+
+                if (originalField.value) {
+                    shadowInput.value = gregToShamsiStr(originalField.value);
+                }
+
+                originalField.parentNode.insertBefore(shadowInput, originalField);
+
+                const openCalendarDirectly = function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (window.jalaliDatepicker) {
+                        window.jalaliDatepicker.show(shadowInput);
+                    }
+                };
+
+                shadowInput.addEventListener('click', openCalendarDirectly);
+                shadowInput.addEventListener('focus', openCalendarDirectly);
+
+                shadowInput.addEventListener('change', function (e) {
+                    e.stopPropagation();
+                    if (this.value && this.value.includes('/')) {
+                        originalField.value = shamsiToGregStr(this.value);
+                    } else {
+                        originalField.value = '';
+                    }
+                    originalField.dispatchEvent(new Event('input', {bubbles: true}));
+                    originalField.dispatchEvent(new Event('change', {bubbles: true}));
+                });
+            });
+
+            if (window.jalaliDatepicker) {
+                window.jalaliDatepicker.startWatch({time: true, hasSecond: false});
+            }
+        }
+
+        initIsolatedJalaliFields();
+        setTimeout(initIsolatedJalaliFields, 50);
+        setTimeout(initIsolatedJalaliFields, 250);
+
+        // 🛡️ حل فوق‌العاده مهم باگ ارور 400 دیتابیس با قابلیت اولویت اول (True)
+        const mainForm = document.querySelector('form');
+        if (mainForm) {
+            mainForm.addEventListener('submit', function (e) {
+                const targetNames = ['discount_start', 'discount_end', 'valid_until'];
+                targetNames.forEach(name => {
+                    const hiddenField = document.querySelector(`input[name="${name}"]`);
+                    if (hiddenField) {
+                        if (hiddenField.value.trim() === '') {
+                            hiddenField.disabled = true; // اگر خالی است کلا فرستاده نشود تا None شود
+                        } else if (hiddenField.value.includes('T')) {
+                            hiddenField.value = hiddenField.value.replace('T', ' '); // تضمین حذف T در ثانیه آخر سابمیت
+                        }
+                    }
+                });
+            }, true); // فاز کپچرینگ برای اجرا پیش از اسکریپت آپلود عکس
+        }
+
         function closeCropModal() {
             overlay.style.display = 'none';
-
-            // قفل کردن دسترسی مرورگر موبایل به این پاپ‌آپ در زمان بسته بودن
             overlay.style.pointerEvents = 'none';
             overlay.style.userSelect = 'none';
             overlay.style.webkitUserSelect = 'none';
-
             if (cropper) {
                 cropper.destroy();
                 cropper = null;
@@ -159,11 +277,9 @@
         document.querySelectorAll('input[type="file"]').forEach(input => {
             input.addEventListener('change', function (e) {
                 let specName = input.name;
-
                 if (specName === "image_url" && document.querySelector('input[name="subtitle"]')) {
                     specName = "banner_image";
                 }
-
                 const spec = cropSpecs[specName];
                 if (!spec) return;
 
@@ -177,8 +293,6 @@
                     const reader = new FileReader();
                     reader.onload = function (event) {
                         previewImg.src = event.target.result;
-
-                        // باز کردن پاپ‌آپ و آزاد کردن موقت دسترسی تاچ
                         overlay.style.display = 'flex';
                         overlay.style.pointerEvents = 'auto';
                         overlay.style.userSelect = 'auto';
@@ -200,7 +314,6 @@
 
         saveBtn.addEventListener('click', function () {
             if (!cropper || !currentInput || !activeSpec) return;
-
             const canvas = cropper.getCroppedCanvas({
                 width: activeSpec.width,
                 height: activeSpec.height,
@@ -211,31 +324,23 @@
             canvas.toBlob(function (blob) {
                 const originalFileName = currentInput.files[0].name;
                 const croppedFile = new File([blob], originalFileName, {type: 'image/jpeg'});
-
                 const dataTransfer = new DataTransfer();
                 dataTransfer.items.add(croppedFile);
                 currentInput.files = dataTransfer.files;
-
                 closeCropModal();
             }, 'image/jpeg', 0.9);
         });
 
-        // 🔒 قفل دوم ضد باگ موبایل: شنود رویداد پیست و اجبار به تزریق متن کاملاً خام
         document.querySelectorAll('textarea, input[type="text"]').forEach(element => {
             element.addEventListener('paste', function (e) {
                 const plainText = (e.clipboardData || window.clipboardData).getData('text/plain');
-
                 if (plainText) {
                     e.preventDefault();
-
                     const startPos = this.selectionStart;
                     const endPos = this.selectionEnd;
                     const currentVal = this.value;
-
                     this.value = currentVal.substring(0, startPos) + plainText + currentVal.substring(endPos);
-
                     this.selectionStart = this.selectionEnd = startPos + plainText.length;
-
                     this.dispatchEvent(new Event('input', {bubbles: true}));
                     this.dispatchEvent(new Event('change', {bubbles: true}));
                 }

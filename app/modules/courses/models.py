@@ -24,6 +24,12 @@ class Course(Base):
     title = Column(String, nullable=False)
     description = Column(Text, nullable=False)
     price = Column(Integer, default=0)  # به تومان
+
+    # 🔴 ستون‌های جدید برای مدیریت تخفیف‌های زمان‌دار
+    discount_price = Column(Integer, nullable=True)  # به تومان
+    discount_start = Column(DateTime, nullable=True)  # تاریخ و ساعت شروع
+    discount_end = Column(DateTime, nullable=True)  # تاریخ و ساعت پایان
+
     session_count = Column(Integer, default=0)  # تعداد کل جلسات
     total_hours = Column(Integer, default=0)  # مجموع زمان دوره
     category = Column(String, index=True, nullable=False)  # کیک، چیزکیک، شیرینی
@@ -40,6 +46,28 @@ class Course(Base):
     lessons = relationship("Lesson", back_populates="course", cascade="all, delete-orphan")
     documents = relationship("CourseDocument", back_populates="course", cascade="all, delete-orphan")
     images = relationship("CourseImage", back_populates="course", cascade="all, delete-orphan")
+
+    # 🔴 پراپرتی هوشمند برای سنجش لحظه‌ای وضعیت تخفیف بر اساس زمان UTC سرور
+    @property
+    def is_discount_active(self) -> bool:
+        if not self.discount_price or not self.discount_start or not self.discount_end:
+            return False
+
+        now = datetime.now(timezone.utc)
+
+        # هماهنگ‌سازی زون زمانی برای مقایسه دقیق دیتابیس
+        start = self.discount_start.replace(
+            tzinfo=timezone.utc) if self.discount_start.tzinfo is None else self.discount_start
+        end = self.discount_end.replace(tzinfo=timezone.utc) if self.discount_end.tzinfo is None else self.discount_end
+
+        return start <= now <= end
+
+    # 🔴 پراپرتی هوشمند جهت بازگرداندن قیمت نهایی و قابل پرداخت در این ثانیه
+    @property
+    def final_price(self) -> int:
+        if self.is_discount_active:
+            return self.discount_price
+        return self.price
 
     def __str__(self):
         return self.title
