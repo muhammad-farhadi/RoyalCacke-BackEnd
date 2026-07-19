@@ -40,16 +40,18 @@ def process_checkout(db: Session, user_id: int, discount_code: str = None):
     if not cart or not cart.items:
         raise HTTPException(status_code=400, detail="سبد خرید شما خالی است.")
 
-    # ۱. محاسبه قیمت کل دوره‌های داخل سبد
+    # ۱. محاسبه قیمت کل دوره‌های داخل سبد بر اساس پراپرتی هوشمند final_price
     original_amount = 0
     course_items = []
     for item in cart.items:
         course = db.query(Course).filter(Course.id == item.course_id).first()
         if course:
-            original_amount += course.price
-            course_items.append({"course_id": course.id, "price": course.price})
+            # 🔴 اصلاح کلیدی: اعمال قیمت تخفیف زمان‌دار به عنوان قیمت پایه فاکتور
+            current_price = course.final_price
+            original_amount += current_price
+            course_items.append({"course_id": course.id, "price": current_price})
 
-    # ۲. اعمال منطق کد تخفیف
+    # ۲. اعمال منطق کد تخفیف کوپنی (در صورت وجود، روی قیمت نهایی دوره اعمال می‌شود)
     discount_amount = 0
     discount_obj = None
 
@@ -64,9 +66,8 @@ def process_checkout(db: Session, user_id: int, discount_code: str = None):
         if discount_obj.used_count >= discount_obj.usage_limit:
             raise HTTPException(status_code=400, detail="ظرفیت استفاده از این کد تخفیف به پایان رسیده است.")
 
-        # محاسبه مبلغ تخفیف
+        # محاسبه مبلغ تخفیف کوپن روی قیمت‌های جاری
         calculated_discount = (original_amount * discount_obj.percent) // 100
-        # چک کردن سقف تخفیف
         if discount_obj.max_discount_amount and calculated_discount > discount_obj.max_discount_amount:
             discount_amount = discount_obj.max_discount_amount
         else:
@@ -84,14 +85,14 @@ def process_checkout(db: Session, user_id: int, discount_code: str = None):
         discount_id=discount_obj.id if discount_obj else None
     )
     db.add(new_order)
-    db.flush()  # آیدی فاکتور رو میگیریم ولی کامیت نمیکنیم تا بقیه کارها انجام شه
+    db.flush()
 
     # ۴. ساخت اقلام فاکتور
     for item in course_items:
         order_item = models.OrderItem(order_id=new_order.id, course_id=item["course_id"], price=item["price"])
         db.add(order_item)
 
-    # ۵. آپدیت تعداد دفعات استفاده کد تخفیف
+    # ۵. آپدیت تعداد دفعات استفاده کد تخفیف کوپنی
     if discount_obj:
         discount_obj.used_count += 1
 

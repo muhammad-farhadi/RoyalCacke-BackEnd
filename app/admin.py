@@ -350,7 +350,13 @@ class CourseAdmin(ModelView, model=Course):
                     "session_count", "total_hours", "category", "level", "image_url", "badge", "is_published"]
 
     form_overrides = {"image_url": FileField}
-    form_args = {"image_url": {"widget": FileInput()}}
+
+    # 🔥 اصلاح کلیدی: تعریف اختیاری (Optional) بودن فیلدهای تاریخ شروع و پایان تخفیف برای WTForms
+    form_args = {
+        "image_url": {"widget": FileInput()},
+        "discount_start": {"validators": [Optional()]},
+        "discount_end": {"validators": [Optional()]}
+    }
 
     column_labels = {
         "id": "شناسه دوره", "title": "عنوان دوره آموزشی", "description": "توضیحات و سرفصل‌ها",
@@ -376,24 +382,26 @@ class CourseAdmin(ModelView, model=Course):
     }
 
     async def on_model_change(self, data: dict, model: Course, is_created: bool, request: Request) -> None:
-        # 🔴 بخش جدید: تبدیل هوشمند ساعت تهران ادمین به UTC قبل از ثبت در دیتابیس
         tehran_offset = timezone(timedelta(hours=3, minutes=30))
 
+        # تبدیل هوشمند ساعت تهران به UTC (فقط در صورتی که دیتایی وارد شده باشد)
         if "discount_start" in data and isinstance(data["discount_start"], datetime):
             dt_start = data["discount_start"]
             if dt_start.tzinfo is None:
-                # به مرورگر می‌گوییم این زمان تهران است
                 dt_start = dt_start.replace(tzinfo=tehran_offset)
-            # تبدیل به UTC و حذف اطلاعات ریجن جهت ذخیره تمیز در دیتابیس
             data["discount_start"] = dt_start.astimezone(timezone.utc).replace(tzinfo=None)
+        elif "discount_start" in data and data["discount_start"] == "":
+            data["discount_start"] = None
 
         if "discount_end" in data and isinstance(data["discount_end"], datetime):
             dt_end = data["discount_end"]
             if dt_end.tzinfo is None:
                 dt_end = dt_end.replace(tzinfo=tehran_offset)
             data["discount_end"] = dt_end.astimezone(timezone.utc).replace(tzinfo=None)
+        elif "discount_end" in data and data["discount_end"] == "":
+            data["discount_end"] = None
 
-        # پردازش آپلود عکس (کد قبلی شما کاملاً محفوظ است)
+        # پردازش آپلود عکس
         if "image_url" in data:
             val = data["image_url"]
             if isinstance(val, UploadFile) and val.filename:
@@ -823,11 +831,19 @@ class EnrollmentAdmin(ModelView, model=Enrollment):
     # نمایش عنوان دوره در جدول لیست دسترسی‌ها
     column_list = ["id", "user.phone_number", "course.title", "purchased_price", "created_at"]
 
-    # امکان جستجو
+    # امکان جستجو در جدول لیست
     column_searchable_list = ["id", "user.phone_number", "user.full_name"]
 
     # 🔴 استفاده از course (به جای course_id) برای ساخته شدن منوی کشویی
     form_columns = ["user", "course", "purchased_price"]
+
+    # 🔥 اضافه شدن قابلیت سرچ هوشمند آنلاین و سریع در فرم (بدون سنگین شدن لود صفحه)
+    form_ajax_refs = {
+        "user": {
+            "fields": ["full_name", "phone_number"],  # فیلدهای سرچ در مدل User
+            "placeholder": "نام دانشجو یا شماره موبایل را جستجو کنید...",
+        }
+    }
 
     # 🔴 اختیاری کردن مبلغ خرید (اگر خالی بماند، صفر رد می‌شود)
     form_args = {

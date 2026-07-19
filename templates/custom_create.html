@@ -66,30 +66,22 @@
     }
 
     /* 🔒 قفل ضد باگ کپی-پیست موبایل */
-    .form-label,
-    .form-hint,
-    .input-group-text,
-    label,
-    .btn:not(.btn-primary):not(#crop-save-btn),
-    .nav-link,
-    .card-title {
+    .form-label, .form-hint, .input-group-text, label,
+    .btn:not(.btn-primary):not(#crop-save-btn), .nav-link, .card-title {
         -webkit-user-select: none !important;
         -moz-user-select: none !important;
         -ms-user-select: none !important;
         user-select: none !important;
     }
 
-    input[type="text"],
-    input[type="number"],
-    textarea,
-    .form-control {
+    input[type="text"], input[type="number"], textarea, .form-control {
         -webkit-user-select: text !important;
         -moz-user-select: text !important;
         -ms-user-select: text !important;
         user-select: text !important;
     }
 
-    /* 📅 تضمین قرارگیری تقویم روی بالاترین لایه قالب ادمین */
+    /* 📅 تنظیم لایه بندی تقویم جلالی روی پوسته ادمین */
     jdp-container {
         font-family: inherit !important;
         direction: rtl !important;
@@ -125,7 +117,6 @@
     </div>
 </div>
 
-<!-- 📅 اسکریپت‌های ریاضی و پکیج رسمی تقویم جلالی -->
 <script src="https://cdn.jsdelivr.net/npm/jalaali-js/dist/jalaali.js"></script>
 <script src="https://unpkg.com/@majidh1/jalalidatepicker/dist/jalalidatepicker.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
@@ -172,11 +163,9 @@
             const jd = parseInt(dateParts[2], 10);
             if (isNaN(jy) || isNaN(jm) || isNaN(jd)) return '';
             const g = jalaali.toGregorian(jy, jm, jd);
-            // 🔥 اصلاح بسیار مهم: استفاده از فاصله به جای T برای رفع خطای 400 در پایتون
             return `${g.gy}-${String(g.gm).padStart(2, '0')}-${String(g.gd).padStart(2, '0')} ${timePart}:00`;
         }
 
-        // 📅 مقداردهی اینپوت‌های ایزوله و شلیک مستقیم کلیک تقویم
         function initIsolatedJalaliFields() {
             const targetNames = ['discount_start', 'discount_end', 'valid_until'];
 
@@ -184,11 +173,13 @@
                 const originalField = document.querySelector(`input[name="${name}"]`);
                 if (!originalField || originalField.hasAttribute('data-shadow-bound')) return;
 
+                // 🔥 مسدودسازی کامل flatpickr قالب ادمین با حذف اتریبیوت نقش رول
+                originalField.removeAttribute('data-role');
+
                 if (originalField._flatpickr) {
                     originalField._flatpickr.destroy();
                 }
 
-                // اگر از قبل مقدار با کاراکتر T آمده، آن را در لود اولیه اصلاح کن
                 if (originalField.value && originalField.value.includes('T')) {
                     originalField.value = originalField.value.replace('T', ' ');
                 }
@@ -199,7 +190,7 @@
                 const shadowInput = document.createElement('input');
                 shadowInput.type = 'text';
                 shadowInput.className = 'form-control';
-                shadowInput.placeholder = 'انتخاب تاریخ و ساعت شمسی...';
+                shadowInput.placeholder = 'اختیاری - انتخاب تاریخ و ساعت شمسی...';
                 shadowInput.setAttribute('data-jdp', '');
                 shadowInput.setAttribute('autocomplete', 'off');
                 shadowInput.style.cursor = 'pointer';
@@ -242,7 +233,7 @@
         setTimeout(initIsolatedJalaliFields, 50);
         setTimeout(initIsolatedJalaliFields, 250);
 
-        // 🛡️ حل فوق‌العاده مهم باگ ارور 400 دیتابیس با قابلیت اولویت اول (True)
+        // 🛡️ بررسی اطلاعات در فاز Capturing پیش از ارسال مولتی‌پارت فایل‌ها
         const mainForm = document.querySelector('form');
         if (mainForm) {
             mainForm.addEventListener('submit', function (e) {
@@ -251,13 +242,13 @@
                     const hiddenField = document.querySelector(`input[name="${name}"]`);
                     if (hiddenField) {
                         if (hiddenField.value.trim() === '') {
-                            hiddenField.disabled = true; // اگر خالی است کلا فرستاده نشود تا None شود
+                            hiddenField.value = ''; // ارسال رشته خالی واقعی جهت تبدیل تمیز به None در پایتون
                         } else if (hiddenField.value.includes('T')) {
-                            hiddenField.value = hiddenField.value.replace('T', ' '); // تضمین حذف T در ثانیه آخر سابمیت
+                            hiddenField.value = hiddenField.value.replace('T', ' ');
                         }
                     }
                 });
-            }, true); // فاز کپچرینگ برای اجرا پیش از اسکریپت آپلود عکس
+            }, true);
         }
 
         function closeCropModal() {

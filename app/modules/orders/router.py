@@ -49,20 +49,23 @@ def add_to_cart(data: schemas.CartItemAdd, db: Session = Depends(get_db),
 
 @router.get("/cart", response_model=schemas.CartResponse)
 def get_user_cart(db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
-    """ مشاهده سبد خرید فعلی """
+    """ مشاهده سبد خرید فعلی با احتساب تخفیف‌های زمان‌دار """
     cart = services.get_or_create_cart(db, current_user.id)
 
     response_data = {"id": cart.id, "user_id": cart.user_id, "items": [], "total_price": 0}
     for item in cart.items:
         course = db.query(Course).filter(Course.id == item.course_id).first()
         if course:
+            # 🔴 اصلاح کلیدی: خواندن قیمت نهایی لحظه‌ای (تخفیف‌دار) به جای قیمت ثابت اصلی
+            current_price = course.final_price
+
             response_data["items"].append({
                 "id": item.id,
                 "course_id": course.id,
                 "course_title": course.title,
-                "price": course.price
+                "price": current_price
             })
-            response_data["total_price"] += course.price
+            response_data["total_price"] += current_price
 
     return response_data
 
